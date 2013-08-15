@@ -1,0 +1,59 @@
+This project is split into several sections:
+
+libetherten:
+This interfaces with the SPI and Ethernet, and provides
+some utility functions such as creating random byte
+sequences using the WDT clock jitter.
+
+
+bootsafe:
+This acts as the primary bootloader, and will:
+
+* Jump into Optiboot when the reset reason is an external
+  reset;
+
+* Jump into the TFTP bootloader when the reset reason is
+  the Power-on reset, or if __reboot_bootloader was called
+  to reset the MCU;
+
+* Jump into the application if none of the above is true.
+
+It also provides a few utility functions:
+
+* __wdt_reset_mcu(magic) - resets the MCU using the
+  watchdog timer - the bootloader will be passed the
+  magic, as the CPU registers are not initialized on
+  reset.
+
+* __reboot_application() - resets the MCU, passing the
+  0xFEEDF00D magic to reboot to the application.
+
+* __reboot_bootloader() - resets the MCU, passing the
+  0xC0DECAFE magic to reboot to the TFTP bootloader.
+
+* __flash_write_page(dst,src,valid1,valid2) -
+  checks that valid1 and valid2 are valid - valid1 should
+  be dst ^ 0xC0DE, and valid2 should be src ^ 0xCAFE; if
+  valid1 and valid2 are valid, and the destination is less
+  than 0x7C00 (the start of this bootloader), this will
+  write the page on behalf of the caller.
+
+
+bootloader:
+This is the TFTP bootloader.  This will attempt to acquire
+a DHCP lease, and if successful send a broadcast TFTP
+read request for one of three files:
+
+* The file stored in the EEPROM;
+
+* The file "EtherTen.bin"; or
+
+* The file "\Boot\EtherTen.bin"
+
+If the file contents are different to the contents of
+the application flash, and it is less than 28kB in size, 
+it will re-read the file and write it to flash.
+
+
+updater:
+This is an AVR application that will update the TFTP bootloader.
