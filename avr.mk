@@ -9,7 +9,7 @@ BOOTFUNCS_START   = 0x00007C80
 OPTIBOOT_START    = 0x00007E00
 MCUSRMIRROR_ADDR  = 0x008008FF
 STACKEND_ADDR     = 0x008008FD
-EEPROM_DATA_START = 0x00810380
+EEBOOTDATA_START  = 0x00810380
 
 MCU = atmega328p
 
@@ -31,7 +31,6 @@ LDFLAGS += -Wl,--section-start=.application=$(APP_START) \
            -Wl,--section-start=.bootloader=$(BOOTLOADER_START) \
 	   -Wl,--section-start=.bootfuncs=$(BOOTFUNCS_START) \
 	   -Wl,--section-start=.optiboot=$(OPTIBOOT_START) \
-	   -Wl,--section-start=.eeprom.boot=$(EEPROM_DATA_START) \
 	   -Wl,--defsym=__mcusr_mirror=$(MCUSRMIRROR_ADDR) \
 	   -Wl,--defsym=__stack=$(STACKEND_ADDR)
 

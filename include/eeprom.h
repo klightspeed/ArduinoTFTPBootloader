@@ -19,7 +19,7 @@ struct eeprom_boot_data {
     char firmware_filename[64];
 };
 
-extern struct eeprom_boot_data __eeprom_boot_data EEMEM;
+#define EEPROM_BOOT_DATA_START ((void *)0x380)
 extern struct eeprom_boot_data eeprom_boot_data;
 
 void load_eeprom_data(void);

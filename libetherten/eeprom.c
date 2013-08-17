@@ -1,14 +1,14 @@
 #include "eeprom.h"
-#include "wdt.h"
+#include "random.h"
 
 struct eeprom_boot_data eeprom_boot_data;
 
 void load_eeprom_data(void) {
-    eeprom_read_block(&eeprom_boot_data, &__eeprom_boot_data, sizeof(eeprom_boot_data));
+    eeprom_read_block(&eeprom_boot_data, EEPROM_BOOT_DATA_START, sizeof(eeprom_boot_data));
 
     if (eeprom_boot_data.sig[0] != 0x55 || eeprom_boot_data.sig[1] != 0xAA || eeprom_boot_data.structlen != sizeof(eeprom_boot_data)) {
         memset (&eeprom_boot_data, 0, sizeof(eeprom_boot_data));
-	wdt_get_random_bytes(&eeprom_boot_data.ifconfig.ethconfig.hwaddr, 6);
+	get_random_bytes(&eeprom_boot_data.ifconfig.ethconfig.hwaddr, 6);
 	eeprom_boot_data.ifconfig.ethconfig.hwaddr.octet[0] = 0xFE;
 	eeprom_boot_data.sig[0] = 0x55;
 	eeprom_boot_data.sig[1] = 0xAA;
@@ -20,5 +20,5 @@ void load_eeprom_data(void) {
 }
 
 void save_eeprom_data(void) {
-    eeprom_update_block(&eeprom_boot_data, &__eeprom_boot_data, sizeof(eeprom_boot_data));
+    eeprom_update_block(&eeprom_boot_data, EEPROM_BOOT_DATA_START, sizeof(eeprom_boot_data));
 }

@@ -4,9 +4,84 @@
 #include "dhcp.h"
 #include "util.h"
 
-void dhcp_init_request(struct dhcp_ifconfig *ifconfig, uint8_t reqtype, uint8_t elapsed) {
-    uint8_t *x = (uint8_t *)&dhcp_state;
+void __attribute__((naked)) __dhcp_init_request(void) {
+    static const char header_opts[] PROGMEM = {
+        0xFF, 0xFF, 0xFF, 0xFF, // Broadcast IP address
+	0x43, 0x00, // Port 67
+	0x00, 0x00, // Zero length
+	0x01, // BOOTP request
+	0x01, // HWADDR type 1
+	0x06, // HWADDR length 6
+	// Gap
+        0x63, 0x82, 0x53, 0x63, // DHCP magic
+	53, 1, 1, // DHCP request type
+	61, 7, 1, 0, 0, 0, 0, 0, 0, // Client ID
+	50, 4, 0, 0, 0, 0, // Requested IP
+	0, 0, 0, 0, 0, 0, // Server IP
+	55, 4, 1, 2, 6, 42, // Requested options
+	255 // End of options
+    };
 
+    int headerlen = offsetof(struct dhcp_state,packet.hops);
+    int zerolen = offsetof(struct dhcp_state,packet.dhcpcookie) - offsetof(struct dhcp_state,packet.hops);
+    int optslen = 3 + 9 + 6 + 6 + 6 + 1;
+    int packetlen = offsetof(struct dhcp_packet,options) + optslen;
+
+    asm volatile (
+        "push r26\n\t"
+	"push r27\n\t"
+	"ldi r23, %[headerlen]\n\t"
+	"ldi r30, lo8(%[header_opts])\n\t"
+	"ldi r31, hi8(%[header_opts])\n\t"
+	"call __copy_const_zx\n\t"
+	"ldi r23, %[zerolen]\n\t"
+	"call __zero_x\n\t"
+	"ldi r23, %[optslen]\n\t"
+	"call __copy_const_zx\n\t"
+	"subi r26, lo8(%[packetlen] - %[hwaddrofs])\n\t"
+	"sbci r27, hi8(%[packetlen] - %[hwaddrofs])\n\t"
+	"mov r30, r24\n\t"
+	"mov r31, r25\n\t"
+	"ldi r23, 6\n\t"
+	"adiw r30, %[ifhwaddrofs]\n\t"
+	"call __copy_zx\n\t"
+	"subi r26, lo8(%[hwaddrofs] + 6 - (%[optsofs] + 2))\n\t"
+	"sbci r27, hi8(%[hwaddrofs] + 6 - (%[optsofs] + 2))\n\t"
+	"st X+, r20\n\t"
+	"sbiw r30, 6\n\t"
+	"adiw r26, 3\n\t"
+	"ldi r23, 6\n\t"
+	"call __copy_zx\n\t"
+	"adiw r26, 2\n\t"
+	"ldi r23, 4\n\t"
+	"call __copy_zx\n\t"
+	"cpi r20, 3\n\t"
+	"brne 1f\n\t"
+	"ldi r23, 54\n\t"
+	"st X+, r23\n\t"
+	"ldi r23, 4\n\t"
+	"st X+, r23\n\t"
+	"call __copy_zx\n\t"
+	"1:\n\t"
+	"pop r27\n\t"
+	"pop r26\n\t"
+	"ret"
+	:
+	: [headerlen] "M" (headerlen),
+	  [header_opts] "i" (header_opts),
+	  [zerolen] "M" (zerolen),
+	  [optslen] "M" (optslen),
+	  [packetlen] "i" (packetlen),
+	  [hwaddrofs] "i" (offsetof(struct dhcp_packet,hwaddr)),
+	  [ifhwaddrofs] "I" (offsetof(struct dhcp_ifconfig,ethconfig.hwaddr)),
+	  [optsofs] "i" (offsetof(struct dhcp_packet,options))
+    );
+
+#if 0
+    register uint16_t packetlen asm("r24");
+
+    asm volatile ("" : "=x" (x), "=r" (ifconfig), "=r" (reqtype), "=r" (elapsed));
+    
     #define stx(v) write_rx(x,v,r21)
     #define stx_zrel(v) write_zx_rel(x,v,offsetof(struct dhcp_ifconfig, v))
     #define stx0() write_zero_x(x)
@@ -14,6 +89,8 @@ void dhcp_init_request(struct dhcp_ifconfig *ifconfig, uint8_t reqtype, uint8_t 
     #define stx_str_const(v,len) copy_const_zx(x,v,len)
     #define stx_str(v,len) copy_zx(x,v,len)
 
+    asm volatile ("push r24\n\tpush r25");
+    asm volatile ("push r26\n\tpush r27");
     stx_str_const("\xFF\xFF\xFF\xFF\x43\x00\x00\x00\x01\x01\x06\x00\00\00\00\00\00", 17);
     stx(elapsed);
     stx0_str(offsetof(struct dhcp_state,packet.hwaddr) - offsetof(struct dhcp_state,packet.flags));
@@ -35,13 +112,18 @@ void dhcp_init_request(struct dhcp_ifconfig *ifconfig, uint8_t reqtype, uint8_t 
 	stx_str(&ifconfig->dhcpserver, 4);
     }
     stx_str_const("\x37\x04\x01\x03\x06\x2A\xFF", 7);
-    dhcp_state.packetlen = ((void *)x) - ((void *)&dhcp_state.packet);
 #else
     stx0_str(offsetof(struct dhcp_state,packet.bootpopts) - offsetof(struct dhcp_state,packet.hwaddr_pad));
     stx0_str(64);
 #endif
-    dhcp_state.packetlen = sizeof(dhcp_state.packet);
-
-    wdt_get_random_bytes(dhcp_state.packet.txid, 4);
+    packetlen = (uint16_t)x;
+    asm volatile ("pop r27\n\tpop r26" : "=x" (x));
+    packetlen -= (uint16_t)x;
+    packetlen -= offsetof(struct dhcp_state,packet);
+    x += offsetof(struct dhcp_state,packetlen);
+    stx(LO8(packetlen));
+    stx(HI8(packetlen));
+    x -= offsetof(struct dhcp_state,packetlen) + 2;
+#endif
 }
 

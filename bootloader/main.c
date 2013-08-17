@@ -11,7 +11,7 @@
 #include "spi.h"
 #include "w5100.h"
 #include "util.h"
-#include "wdt.h"
+#include "random.h"
 #include "eeprom.h"
 #include "dhcp.h"
 #include "tftp.h"
@@ -25,6 +25,8 @@
 #else
 #define BCASTIPADDR &gbcastipaddr
 #endif
+
+static struct dhcp_state dhcp_state;
 
 int main (void) {
     char *firmware_filename = NULL;
@@ -41,7 +43,7 @@ int main (void) {
     load_eeprom_data();
 
     if (eeprom_boot_data.usedhcp) {
-        dhcp_get_address(&eeprom_boot_data.ifconfig);
+        dhcp_get_address(&dhcp_state, &eeprom_boot_data.ifconfig);
     }
 
     if (memcmp(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, "\0\0\0\0", 4)) {

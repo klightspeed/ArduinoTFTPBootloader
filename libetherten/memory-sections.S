@@ -10,7 +10,3 @@ __bootloader_start:
 .global __optiboot_start
 __optiboot_start:
 
-.section .eeprom.boot,"",@nobits
-.global __eeprom_boot_data
-__eeprom_boot_data:
-

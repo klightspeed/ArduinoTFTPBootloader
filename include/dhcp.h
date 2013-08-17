@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "w5100.h"
-#include "wdt.h"
+#include "random.h"
 
 struct dhcp_packet {
     uint8_t msgtype;
@@ -52,15 +52,24 @@ struct dhcp_state {
     };
 };
 
-extern struct dhcp_state dhcp_state;
+#define dhcp_init_request(state,ifconfig,reqtype) \
+    do { \
+	register struct dhcp_state *__state asm("r26") = state; \
+	register struct dhcp_ifconfig *__ifconfig asm("r30") = ifconfig; \
+	register uint8_t __reqtype asm("r20") = reqtype; \
+	asm volatile ( \
+	    "call __dhcp_init_request" \
+	    : "+z" (__ifconfig) \
+	    : "x" (__state), \
+              "r" (__reqtype) \
+	    : "r23", "r24", "r25" \
+	); \
+    } while (0)
 
-void dhcp_init_request(struct dhcp_ifconfig *ifconfig, uint8_t reqtype, uint8_t elapsed);
-
-static inline void dhcp_get_address(struct dhcp_ifconfig *ifconfig) {
+static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig) {
 
     //static struct ipaddr debugaddr = { { 192, 168, 200, 16 } };
     uint8_t reqtype = 1;
-    uint8_t elapsed = 0;
     uint8_t retries = 10;
 
     w5100_init(&ifconfig->ethconfig);
@@ -75,17 +84,18 @@ static inline void dhcp_get_address(struct dhcp_ifconfig *ifconfig) {
 
     do {
         _delay_ms(1000);
-        dhcp_init_request(ifconfig, reqtype, elapsed);
-	w5100_send(2, &dhcp_state.packet, dhcp_state.packetlen);
-	//w5100_send(3, &dhcp_state.packet, dhcp_state.packetlen);
+        dhcp_init_request(state, ifconfig, reqtype);
+        get_random_bytes(state->packet.txid, 4);
+	w5100_send(2, &state->packet, state->packetlen);
+	//w5100_send(3, &state->packet, state->packetlen);
 	
-	while (w5100_udp_recv(2, &dhcp_state.udppacket, 1000)) {
-	    //w5100_send(3, &dhcp_state.packet, dhcp_state.packetlen);
+	while (w5100_udp_recv(2, &state->udppacket, 1000)) {
+	    //w5100_send(3, &state->packet, state->packetlen);
 
-	    if (dhcp_state.packet.msgtype == 2) {
-		if (!memcmp(&dhcp_state.packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
+	    if (state->packet.msgtype == 2) {
+		if (!memcmp(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
 #ifdef USE_DHCP
-		    uint8_t *optptr = dhcp_state.packet.options;
+		    uint8_t *optptr = state->packet.options;
 		    uint8_t optcode;
 		    uint8_t resptype = 0;
 
@@ -116,8 +126,8 @@ static inline void dhcp_get_address(struct dhcp_ifconfig *ifconfig) {
 		    }
 
 		    if (resptype == 2 || resptype == 5) {
-			if (memcmp(&dhcp_state.packet.yourip, "\0\0\0\0", 4)) {
-			    optptr = (uint8_t *)&dhcp_state.packet.yourip;
+			if (memcmp(&state->packet.yourip, "\0\0\0\0", 4)) {
+			    optptr = (uint8_t *)&state->packet.yourip;
 			    ldx_str(&ifconfig->ethconfig.ipaddr, 4);
 			    for (int i = 0; i < 4; i++) {
 				ifconfig->bcastaddr.octet[i] = ifconfig->ethconfig.ipaddr.octet[i] | ((uint8_t)(~ifconfig->ethconfig.subnet.octet[i]));
@@ -136,16 +146,14 @@ static inline void dhcp_get_address(struct dhcp_ifconfig *ifconfig) {
 			break;
 		    }
 #else
-		    if (memcmp(&dhcp_state.packet.yourip, "\0\0\0\0", 4)) {
-		        memcpy (&ifconfig->ethconfig.ipaddr, &dhcp_state.packet.yourip, 4);
+		    if (memcmp(&state->packet.yourip, "\0\0\0\0", 4)) {
+		        memcpy (&ifconfig->ethconfig.ipaddr, &state->packet.yourip, 4);
 			return;
                     } 
 #endif
 		}
 	    }
 	}
-
-	elapsed += 1;
     } while (--retries);
 }
 

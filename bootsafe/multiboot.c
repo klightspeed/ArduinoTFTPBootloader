@@ -28,7 +28,7 @@ void __attribute__((used,naked)) __init(uint32_t magic) {
     wdt_reset();
     wdt_disable();
 
-    if (__mcusr_mirror == 0) {
+    if (__mcusr_mirror == 0 || (mcusr & _BV(PORF))) {
         __mcusr_mirror = mcusr;
     }
     
@@ -43,5 +43,4 @@ void __attribute__((used,naked)) __init(uint32_t magic) {
 	__builtin_unreachable();
     }
 }
-
 
