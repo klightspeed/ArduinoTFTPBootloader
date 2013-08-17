@@ -330,16 +330,21 @@ static inline void w5100_udp_peek(uint8_t socknum, struct w5100_udp_packet *pack
     BYTESWAP(&packet->len);
 }
 
+static inline int w5100_udp_try_recv(uint8_t socknum, struct w5100_udp_packet *packet) {
+    if (w5100_sock_rxavail(socknum) != 0) {
+	__w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM);
+	BYTESWAP(&packet->port);
+	BYTESWAP(&packet->len);
+	__w5100_sock_rw_mem(socknum, packet->data, packet->len, W5100_OP_RECV_RAM);
+	return 1;
+    }
+
+    return 0;
+}
+
 static inline int w5100_udp_recv(uint8_t socknum, struct w5100_udp_packet *packet, int timeout) {
     while (timeout--) {
-        if (w5100_sock_rxavail(socknum) != 0) {
-	    __w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM);
-	    BYTESWAP(&packet->port);
-	    BYTESWAP(&packet->len);
-	    __w5100_sock_rw_mem(socknum, packet->data, packet->len, W5100_OP_RECV_RAM);
-	    return 1;
-	}
-
+        if (w5100_udp_try_recv(socknum, packet)) return 1;
 	_delay_ms(1);
     }
 

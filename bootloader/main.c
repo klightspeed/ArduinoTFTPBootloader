@@ -27,6 +27,7 @@
 #endif
 
 static struct dhcp_state dhcp_state;
+static struct tftp_state tftp_state;
 
 int main (void) {
     char *firmware_filename = NULL;
@@ -43,7 +44,7 @@ int main (void) {
     load_eeprom_data();
 
     if (eeprom_boot_data.usedhcp) {
-        dhcp_get_address(&dhcp_state, &eeprom_boot_data.ifconfig);
+        dhcp_get_address(&dhcp_state, &eeprom_boot_data.ifconfig, 2);
     }
 
     if (memcmp(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, "\0\0\0\0", 4)) {
@@ -56,11 +57,11 @@ int main (void) {
 	 */
 
 	if (eeprom_boot_data.firmware_filename[0] != 0 && 
-	    tftp_open(BCASTIPADDR, eeprom_boot_data.firmware_filename)) {
+	    tftp_open(&tftp_state, BCASTIPADDR, eeprom_boot_data.firmware_filename, 2)) {
 	    firmware_filename = eeprom_boot_data.firmware_filename;
-	} else if (tftp_open(BCASTIPADDR, DEFAULT_FW_FILENAME)) {
+	} else if (tftp_open(&tftp_state, BCASTIPADDR, DEFAULT_FW_FILENAME, 2)) {
 	    firmware_filename = DEFAULT_FW_FILENAME;
-	} else if (tftp_open(BCASTIPADDR, DEFAULT_FW_FILENAME2)) {
+	} else if (tftp_open(&tftp_state, BCASTIPADDR, DEFAULT_FW_FILENAME2, 2)) {
 	    firmware_filename = DEFAULT_FW_FILENAME2;
 	}
 
@@ -73,7 +74,6 @@ int main (void) {
 		uint16_t datalen = tftp_state.packetlen - 4;
 		uint8_t *data = tftp_state.packet.data;
 
-
 		if (blknum < ((32768 - 4096) / 512)) {
 		    if (memcmp_P(data, (void *)(blknum * 512), datalen)) {
 			flashchanged = 1;
@@ -82,11 +82,11 @@ int main (void) {
 		    filevalid = 0;
 		    break;
 		}
-	    } while (tftp_read_block(++blknum));
+	    } while (tftp_read_block(&tftp_state, ++blknum, 2));
 
 	    if (flashchanged && filevalid) {
 		blknum = 0;
-		tftp_open(BCASTIPADDR, firmware_filename);
+		tftp_open(&tftp_state, BCASTIPADDR, firmware_filename, 2);
 
 		do {
 		    uint16_t datalen = tftp_state.packetlen - 4;
@@ -96,7 +96,7 @@ int main (void) {
 		    for (int pageaddr = 0; pageaddr < datalen; pageaddr += SPM_PAGESIZE) {
 			flash_write_page((void *)(sectpage + pageaddr), data + pageaddr);
 		    }
-		} while (tftp_read_block(++blknum));
+		} while (tftp_read_block(&tftp_state, ++blknum, 2));
 	    }
 	}
     }
