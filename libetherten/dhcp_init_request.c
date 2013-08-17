@@ -5,10 +5,15 @@
 #include "util.h"
 
 void __attribute__((naked)) __dhcp_init_request(void) {
+    #define HEADERLEN (offsetof(struct dhcp_state,packet.hops))
+    #define ZEROLEN (offsetof(struct dhcp_state,packet.dhcpcookie) - offsetof(struct dhcp_state,packet.hops))
+    #define OPTSLEN (3 + 9 + 6 + 6 + 6 + 1)
+    #define PACKETLEN (offsetof(struct dhcp_packet,options) + OPTSLEN)
+
     static const char header_opts[] PROGMEM = {
         0xFF, 0xFF, 0xFF, 0xFF, // Broadcast IP address
 	0x43, 0x00, // Port 67
-	0x00, 0x00, // Zero length
+	(PACKETLEN & 0xFF), ((PACKETLEN >> 8) & 0xFF), // length
 	0x01, // BOOTP request
 	0x01, // HWADDR type 1
 	0x06, // HWADDR length 6
@@ -22,27 +27,24 @@ void __attribute__((naked)) __dhcp_init_request(void) {
 	255 // End of options
     };
 
-    int headerlen = offsetof(struct dhcp_state,packet.hops);
-    int zerolen = offsetof(struct dhcp_state,packet.dhcpcookie) - offsetof(struct dhcp_state,packet.hops);
-    int optslen = 3 + 9 + 6 + 6 + 6 + 1;
-    int packetlen = offsetof(struct dhcp_packet,options) + optslen;
-
     asm volatile (
         "push r26\n\t"
 	"push r27\n\t"
-	"ldi r23, %[headerlen]\n\t"
+	"push r30\n\t"
+	"push r31\n\t"
+	"ldi r23, %[headerlen] + 1\n\t"
 	"ldi r30, lo8(%[header_opts])\n\t"
 	"ldi r31, hi8(%[header_opts])\n\t"
 	"call __copy_const_zx\n\t"
-	"ldi r23, %[zerolen]\n\t"
+	"ldi r23, %[zerolen] + 1\n\t"
 	"call __zero_x\n\t"
-	"ldi r23, %[optslen]\n\t"
+	"ldi r23, %[optslen] + 5\n\t"
 	"call __copy_const_zx\n\t"
 	"subi r26, lo8(%[packetlen] - %[hwaddrofs])\n\t"
 	"sbci r27, hi8(%[packetlen] - %[hwaddrofs])\n\t"
-	"mov r30, r24\n\t"
-	"mov r31, r25\n\t"
-	"ldi r23, 6\n\t"
+	"pop r31\n\t"
+	"pop r30\n\t"
+	"ldi r23, 7\n\t"
 	"adiw r30, %[ifhwaddrofs]\n\t"
 	"call __copy_zx\n\t"
 	"subi r26, lo8(%[hwaddrofs] + 6 - (%[optsofs] + 2))\n\t"
@@ -50,10 +52,10 @@ void __attribute__((naked)) __dhcp_init_request(void) {
 	"st X+, r20\n\t"
 	"sbiw r30, 6\n\t"
 	"adiw r26, 3\n\t"
-	"ldi r23, 6\n\t"
+	"ldi r23, 7\n\t"
 	"call __copy_zx\n\t"
 	"adiw r26, 2\n\t"
-	"ldi r23, 4\n\t"
+	"ldi r23, 5\n\t"
 	"call __copy_zx\n\t"
 	"cpi r20, 3\n\t"
 	"brne 1f\n\t"
@@ -61,17 +63,18 @@ void __attribute__((naked)) __dhcp_init_request(void) {
 	"st X+, r23\n\t"
 	"ldi r23, 4\n\t"
 	"st X+, r23\n\t"
+	"ldi r23, 5\n\t"
 	"call __copy_zx\n\t"
 	"1:\n\t"
 	"pop r27\n\t"
 	"pop r26\n\t"
 	"ret"
 	:
-	: [headerlen] "M" (headerlen),
+	: [headerlen] "M" (HEADERLEN),
 	  [header_opts] "i" (header_opts),
-	  [zerolen] "M" (zerolen),
-	  [optslen] "M" (optslen),
-	  [packetlen] "i" (packetlen),
+	  [zerolen] "M" (ZEROLEN),
+	  [optslen] "M" (OPTSLEN),
+	  [packetlen] "i" (PACKETLEN),
 	  [hwaddrofs] "i" (offsetof(struct dhcp_packet,hwaddr)),
 	  [ifhwaddrofs] "I" (offsetof(struct dhcp_ifconfig,ethconfig.hwaddr)),
 	  [optsofs] "i" (offsetof(struct dhcp_packet,options))

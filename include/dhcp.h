@@ -62,7 +62,7 @@ struct dhcp_state {
 	    : "+z" (__ifconfig) \
 	    : "x" (__state), \
               "r" (__reqtype) \
-	    : "r23", "r24", "r25" \
+	    : "r23", "memory" \
 	); \
     } while (0)
 
