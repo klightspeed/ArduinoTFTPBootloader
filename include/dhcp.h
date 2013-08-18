@@ -93,7 +93,7 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
 	    //w5100_send(3, &state->packet, state->packetlen);
 
 	    if (state->packet.msgtype == 2) {
-		if (!memcmp(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
+		if (!compare_zx(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
 #ifdef USE_DHCP
 		    uint8_t *optptr = state->packet.options;
 		    uint8_t optcode;
@@ -126,7 +126,7 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
 		    }
 
 		    if (resptype == 2 || resptype == 5) {
-			if (memcmp(&state->packet.yourip, "\0\0\0\0", 4)) {
+			if (compare_const_zx(&state->packet.yourip, PSTR("\0\0\0\0"), 4)) {
 			    optptr = (uint8_t *)&state->packet.yourip;
 			    ldx_str(&ifconfig->ethconfig.ipaddr, 4);
 			    for (int i = 0; i < 4; i++) {
@@ -146,7 +146,7 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
 			break;
 		    }
 #else
-		    if (memcmp(&state->packet.yourip, "\0\0\0\0", 4)) {
+		    if (compare_const_zx(&state->packet.yourip, PSTR("\0\0\0\0"), 4)) {
 		        memcpy (&ifconfig->ethconfig.ipaddr, &state->packet.yourip, 4);
 			return;
                     } 
