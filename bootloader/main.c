@@ -34,11 +34,10 @@ int main (void) {
     MCUCR = (1<<IVCE);
     MCUCR = (1<<IVSEL);
 
-#ifdef SEND_SD_IDLE
-    sdcard_init();
-#endif
+    // Wait for W5100 startup
+    _delay_ms(100);
 
-    sei();
+    sdcard_init();
 
     load_eeprom_data();
 
@@ -100,8 +99,6 @@ int main (void) {
 	    }
 	}
     }
-
-    cli();
 
     __reboot_application();
 
