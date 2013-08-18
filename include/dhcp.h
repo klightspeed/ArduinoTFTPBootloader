@@ -84,17 +84,17 @@ static inline uint8_t dhcp_try_get_response(struct dhcp_state *state, struct dhc
     if (w5100_udp_try_recv(socknum, &state->udppacket)) {
 
 	if (state->packet.msgtype == 2) {
-	    if (!memcmp(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
+	    if (!compare_zx(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
 		uint8_t *optptr = state->packet.options;
 		uint8_t optcode;
 		uint8_t resptype = 0;
 
-		#define ldx() read_rx(x,r21)
-		#define ldx_str(v,len) copy_xz(x,v,len)
+		#define ldx() read_rx(optptr,r21)
+		#define ldx_str(v,len) copy_xz_constz(optptr,v,len)
 
-		while ((optcode = *(optptr++)) != 255) {
+		while ((optcode = ldx()) != 255) {
 		    if (optcode != 0) {
-			uint8_t optlen = *(optptr++);
+			uint8_t optlen = ldx();
 			uint8_t readlen = 0;
 			
 			if (optcode == 53) {
@@ -116,7 +116,7 @@ static inline uint8_t dhcp_try_get_response(struct dhcp_state *state, struct dhc
 		}
 
 		if (resptype == 2 || resptype == 5) {
-		    if (memcmp(&state->packet.yourip, "\0\0\0\0", 4)) {
+		    if (compare_const_zx(&state->packet.yourip, "\0\0\0\0", 4)) {
 			optptr = (uint8_t *)&state->packet.yourip;
 			ldx_str(&ifconfig->ethconfig.ipaddr, 4);
 			for (int i = 0; i < 4; i++) {

@@ -3,7 +3,7 @@ __strlen_z:
 	push r30
 	push r31
 	rjmp 2f
-1:	ld r0, Z+
+1:	lpm r0, Z+
 	or r0, r0
 	breq 1f
 2:	subi r23, 1

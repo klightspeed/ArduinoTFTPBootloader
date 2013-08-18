@@ -47,7 +47,7 @@ int main (void) {
         dhcp_get_address(&dhcp_state, &eeprom_boot_data.ifconfig, 2);
     }
 
-    if (memcmp(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, "\0\0\0\0", 4)) {
+    if (compare_const_zx(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, PSTR("\0\0\0\0"), 4)) {
 	w5100_init(&eeprom_boot_data.ifconfig.ethconfig);
 	/*
 	w5100_udp_bind(3, 9);
@@ -75,7 +75,7 @@ int main (void) {
 		uint8_t *data = tftp_state.packet.data;
 
 		if (blknum < ((32768 - 4096) / 512)) {
-		    if (memcmp_P(data, (void *)(blknum * 512), datalen)) {
+		    if (compare_const_zx(data, (void *)(blknum * 512), datalen)) {
 			flashchanged = 1;
 		    }
 		} else {

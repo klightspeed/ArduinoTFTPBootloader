@@ -43,7 +43,7 @@ static inline void tftp_send_rrq(struct tftp_state *state, char *filename, uint8
     write_x(buf, 0);
     write_x(buf, 1);
     copy_zx_str(buf, filename, 64);
-    copy_zx(buf, "octet\000blksize\000512\000", 18);
+    copy_const_zx_constz(buf, PSTR("octet\000blksize\000512\000"), 18);
 
     w5100_send(socknum, &state->packet, buf - (uint8_t *)&state->packet);
 }
