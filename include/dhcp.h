@@ -23,21 +23,16 @@ struct dhcp_packet {
     uint8_t hwaddr_pad[10];
     char servername[64];
     char bootfilename[128];
-#ifdef USE_DHCP
     uint8_t dhcpcookie[4];
     uint8_t options[336];
-#else
-    uint8_t bootpopts[64];
-#endif
 };
 
 struct dhcp_ifconfig {
     struct w5100_ifconfig ethconfig;
     struct ipaddr dhcpserver;
-#ifdef USE_DHCP
+    char hostname[16];
     struct ipaddr dnsserver;
     struct ipaddr bcastaddr;
-#endif
 };
 
 struct dhcp_state {
@@ -94,7 +89,6 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
 
 	    if (state->packet.msgtype == 2) {
 		if (!compare_zx(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
-#ifdef USE_DHCP
 		    uint8_t *optptr = state->packet.options;
 		    uint8_t optcode;
 		    uint8_t resptype = 0;
@@ -145,12 +139,6 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
 			reqtype = 1; 
 			break;
 		    }
-#else
-		    if (compare_const_zx(&state->packet.yourip, PSTR("\0\0\0\0"), 4)) {
-		        memcpy (&ifconfig->ethconfig.ipaddr, &state->packet.yourip, 4);
-			return;
-                    } 
-#endif
 		}
 	    }
 	}

@@ -7,9 +7,7 @@
 #define USEASMFUNC
 #define DEFAULT_FW_FILENAME "EtherTen.bin"
 #define DEFAULT_FW_FILENAME2 "\\Boot\\EtherTen.bin"
-#define USE_DHCP
 #define SDCARDS_PORTB (_BV(PB1))
 #define SDCARDS_PORTD (_BV(PD4))
-#define SEND_SD_IDLE
 
 #endif /* CONFIG_H */

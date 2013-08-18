@@ -20,12 +20,6 @@
 #include "flash.h"
 #include "boot-funcs.h"
 
-#ifdef USE_DHCP
-#define BCASTIPADDR &eeprom_boot_data.ifconfig.bcastaddr
-#else
-#define BCASTIPADDR &gbcastipaddr
-#endif
-
 static struct dhcp_state dhcp_state;
 
 int main (void) {
@@ -55,11 +49,11 @@ int main (void) {
 	 */
 
 	if (eeprom_boot_data.firmware_filename[0] != 0 && 
-	    tftp_open(BCASTIPADDR, eeprom_boot_data.firmware_filename)) {
+	    tftp_open(&eeprom_boot_data.ifconfig.bcastaddr, eeprom_boot_data.firmware_filename)) {
 	    firmware_filename = eeprom_boot_data.firmware_filename;
-	} else if (tftp_open(BCASTIPADDR, DEFAULT_FW_FILENAME)) {
+	} else if (tftp_open(&eeprom_boot_data.ifconfig.bcastaddr, DEFAULT_FW_FILENAME)) {
 	    firmware_filename = DEFAULT_FW_FILENAME;
-	} else if (tftp_open(BCASTIPADDR, DEFAULT_FW_FILENAME2)) {
+	} else if (tftp_open(&eeprom_boot_data.ifconfig.bcastaddr, DEFAULT_FW_FILENAME2)) {
 	    firmware_filename = DEFAULT_FW_FILENAME2;
 	}
 
@@ -85,7 +79,7 @@ int main (void) {
 
 	    if (flashchanged && filevalid) {
 		blknum = 0;
-		tftp_open(BCASTIPADDR, firmware_filename);
+		tftp_open(&eeprom_boot_data.ifconfig.bcastaddr, firmware_filename);
 
 		do {
 		    uint16_t datalen = tftp_state.packetlen - 4;
