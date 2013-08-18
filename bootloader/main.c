@@ -36,7 +36,7 @@ int main (void) {
     load_eeprom_data();
 
     if (eeprom_boot_data.usedhcp) {
-        dhcp_get_address(&state.dhcp, &eeprom_boot_data.ifconfig);
+        dhcp_get_address(&state.dhcp, &eeprom_boot_data.ifconfig, 2);
     }
 
     if (compare_const_zx(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, PSTR("\0\0\0\0"), 4)) {

@@ -61,87 +61,103 @@ struct dhcp_state {
 	); \
     } while (0)
 
-static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig) {
-
-    //static struct ipaddr debugaddr = { { 192, 168, 200, 16 } };
-    uint8_t reqtype = 1;
-    uint8_t retries = 10;
-
+static inline void dhcp_init(struct dhcp_ifconfig *ifconfig, uint8_t socknum) {
     w5100_init(&ifconfig->ethconfig);
-    
-    //w5100_udp_bind(3, 12345);
-    //w5100_set_endpoint(3, &debugaddr, 65530, NULL);
-    w5100_udp_bind(2, 68);
-    w5100_set_destipaddr(2, &gbcastipaddr);
-    w5100_set_destport(2, 67);
-    w5100_set_desthwaddr(2, &bcasthwaddr);
+    w5100_udp_bind(socknum, 68);
+    w5100_set_destipaddr(socknum, &gbcastipaddr);
+    w5100_set_destport(socknum, 67);
+    w5100_set_desthwaddr(socknum, &bcasthwaddr);
+}
 
+static inline void dhcp_send_request(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig, uint8_t reqtype, uint8_t socknum) {
+    dhcp_init_request(state, ifconfig, reqtype);
+    get_random_bytes(state->packet.txid, 4);
+    w5100_send(socknum, &state->packet, state->packetlen);
+}
 
-    do {
-        _delay_ms(1000);
-        dhcp_init_request(state, ifconfig, reqtype);
-        get_random_bytes(state->packet.txid, 4);
-	w5100_send(2, &state->packet, state->packetlen);
-	//w5100_send(3, &state->packet, state->packetlen);
-	
-	while (w5100_udp_recv(2, &state->udppacket, 1000)) {
-	    //w5100_send(3, &state->packet, state->packetlen);
+static inline uint8_t dhcp_try_get_response(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig, uint8_t socknum) {
+    if (w5100_udp_try_recv(socknum, &state->udppacket)) {
+	if (state->packet.msgtype == 2) {
+	    if (!compare_zx(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
+		uint8_t *optptr = state->packet.options;
+		uint8_t optcode;
+		uint8_t resptype = 0;
 
-	    if (state->packet.msgtype == 2) {
-		if (!compare_zx(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
-		    uint8_t *optptr = state->packet.options;
-		    uint8_t optcode;
-		    uint8_t resptype = 0;
+		#define ldx() read_rx(optptr,r21)
+		#define ldx_str(v,len) copy_xz_constz(optptr,v,len)
 
-		    #define ldx() read_rx(x,r21)
-		    #define ldx_str(v,len) copy_xz_constz(optptr,v,len)
-
-		    while ((optcode = *(optptr++)) != 255) {
-			if (optcode != 0) {
-			    uint8_t optlen = *(optptr++);
-			    uint8_t readlen = 0;
-			    
-			    if (optcode == 53) {
-				resptype = ldx();
-				readlen = 1;
-			    } else if (optcode == 54) {
-				ldx_str(&ifconfig->dhcpserver, 4);
-				readlen = 4;
-			    } else if (optcode == 1) {
-				ldx_str(&ifconfig->ethconfig.subnet, 4);
-				readlen = 4;
-			    } else if (optcode == 3) {
-				ldx_str(&ifconfig->ethconfig.gateway, 4);
-				readlen = 4;
-			    }
-
-			    optptr += optlen - readlen;
+		while ((optcode = ldx()) != 255) {
+		    if (optcode != 0) {
+			uint8_t optlen = ldx();
+			uint8_t readlen = 0;
+			
+			if (optcode == 53) {
+			    resptype = ldx();
+			    readlen = 1;
+			} else if (optcode == 54) {
+			    ldx_str(&ifconfig->dhcpserver, 4);
+			    readlen = 4;
+			} else if (optcode == 1) {
+			    ldx_str(&ifconfig->ethconfig.subnet, 4);
+			    readlen = 4;
+			} else if (optcode == 3) {
+			    ldx_str(&ifconfig->ethconfig.gateway, 4);
+			    readlen = 4;
 			}
+
+			optptr += optlen - readlen;
 		    }
+		}
 
-		    if (resptype == 2 || resptype == 5) {
-			if (compare_const_zx(&state->packet.yourip, PSTR("\0\0\0\0"), 4)) {
-			    optptr = (uint8_t *)&state->packet.yourip;
-			    ldx_str(&ifconfig->ethconfig.ipaddr, 4);
-			    for (int i = 0; i < 4; i++) {
-				ifconfig->bcastaddr.octet[i] = ifconfig->ethconfig.ipaddr.octet[i] | ((uint8_t)(~ifconfig->ethconfig.subnet.octet[i]));
-			    }
-
-			    if (reqtype == 1 && resptype == 2) {
-				reqtype = 3;
-				retries = 4;
-				break;
-			    } else if (resptype == 5) {
-				return;
-			    }
+		if (resptype == 2 || resptype == 5) {
+		    if (compare_const_zx(&state->packet.yourip, PSTR("\0\0\0\0"), 4)) {
+			optptr = (uint8_t *)&state->packet.yourip;
+			ldx_str(&ifconfig->ethconfig.ipaddr, 4);
+			
+			for (int i = 0; i < 4; i++) {
+			    ifconfig->bcastaddr.octet[i] = ifconfig->ethconfig.ipaddr.octet[i] | ((uint8_t)(~ifconfig->ethconfig.subnet.octet[i]));
 			}
-		    } else if (resptype == 6) {
-			reqtype = 1; 
-			break;
+
+			return resptype;
 		    }
+		} else if (resptype == 6) {
+		    return resptype;
 		}
 	    }
 	}
+    }
+
+    return 0;
+}
+
+static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig, uint8_t socknum) {
+    uint8_t reqtype = 1;
+    uint8_t retries = 10;
+
+    dhcp_init(ifconfig, socknum);
+
+    do {
+        uint8_t recvtries = 100;
+	
+	dhcp_send_request(state, ifconfig, reqtype, socknum);
+	
+	do {
+	    uint8_t resptype = dhcp_try_get_response(state, ifconfig, socknum);
+
+	    if (reqtype == 1 && resptype == 2) {
+		reqtype = 3;
+		retries = 4;
+		break;
+	    } else if (resptype == 5) {
+		return;
+	    } else if (resptype == 6) {
+		reqtype = 1;
+		retries = 4;
+		break; 
+	    }
+
+	    _delay_ms(10);
+	} while (--recvtries);
     } while (--retries);
 }
 
