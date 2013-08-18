@@ -3,7 +3,9 @@
 
 #include "wdt_random.h"
 #include "sram_random.h"
+#include "pseudorandom.h"
 
-#define get_random_bytes(buf,len) sram_get_random_bytes(buf,len)
+#define get_random_bytes(buf,len) wdt_get_random_bytes(buf,len)
+#define seed_pseudorandom() wdt_get_random_bytes(&pseudorandom_state, sizeof(pseudorandom_state))
 
 #endif
