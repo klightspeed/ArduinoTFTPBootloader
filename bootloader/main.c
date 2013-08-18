@@ -26,8 +26,10 @@
 #define BCASTIPADDR &gbcastipaddr
 #endif
 
-static struct dhcp_state dhcp_state;
-static struct tftp_state tftp_state;
+static union {
+    struct dhcp_state dhcp;
+    struct tftp_state tftp;
+} state;
 
 int main (void) {
     char *firmware_filename = NULL;
@@ -44,7 +46,7 @@ int main (void) {
     load_eeprom_data();
 
     if (eeprom_boot_data.usedhcp) {
-        dhcp_get_address(&dhcp_state, &eeprom_boot_data.ifconfig, 2);
+        dhcp_get_address(&state.dhcp, &eeprom_boot_data.ifconfig, 2);
     }
 
     if (compare_const_zx(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, PSTR("\0\0\0\0"), 4)) {
@@ -57,11 +59,11 @@ int main (void) {
 	 */
 
 	if (eeprom_boot_data.firmware_filename[0] != 0 && 
-	    tftp_open(&tftp_state, BCASTIPADDR, eeprom_boot_data.firmware_filename, 2)) {
+	    tftp_open(&state.tftp, BCASTIPADDR, eeprom_boot_data.firmware_filename, 2)) {
 	    firmware_filename = eeprom_boot_data.firmware_filename;
-	} else if (tftp_open(&tftp_state, BCASTIPADDR, DEFAULT_FW_FILENAME, 2)) {
+	} else if (tftp_open(&state.tftp, BCASTIPADDR, DEFAULT_FW_FILENAME, 2)) {
 	    firmware_filename = DEFAULT_FW_FILENAME;
-	} else if (tftp_open(&tftp_state, BCASTIPADDR, DEFAULT_FW_FILENAME2, 2)) {
+	} else if (tftp_open(&state.tftp, BCASTIPADDR, DEFAULT_FW_FILENAME2, 2)) {
 	    firmware_filename = DEFAULT_FW_FILENAME2;
 	}
 
@@ -71,8 +73,8 @@ int main (void) {
 	    uint8_t filevalid = 1;
 
 	    do {
-		uint16_t datalen = tftp_state.packetlen - 4;
-		uint8_t *data = tftp_state.packet.data;
+		uint16_t datalen = state.tftp.packetlen - 4;
+		uint8_t *data = state.tftp.packet.data;
 
 		if (blknum < ((32768 - 4096) / 512)) {
 		    if (compare_const_zx(data, (void *)(blknum * 512), datalen)) {
@@ -82,21 +84,21 @@ int main (void) {
 		    filevalid = 0;
 		    break;
 		}
-	    } while (tftp_read_block(&tftp_state, ++blknum, 2));
+	    } while (tftp_read_block(&state.tftp, ++blknum, 2));
 
 	    if (flashchanged && filevalid) {
 		blknum = 0;
-		tftp_open(&tftp_state, BCASTIPADDR, firmware_filename, 2);
+		tftp_open(&state.tftp, BCASTIPADDR, firmware_filename, 2);
 
 		do {
-		    uint16_t datalen = tftp_state.packetlen - 4;
-		    void *data = tftp_state.packet.data;
+		    uint16_t datalen = state.tftp.packetlen - 4;
+		    void *data = state.tftp.packet.data;
 		    uint16_t sectpage = blknum * 512;
 
 		    for (int pageaddr = 0; pageaddr < datalen; pageaddr += SPM_PAGESIZE) {
 			flash_write_page((void *)(sectpage + pageaddr), data + pageaddr);
 		    }
-		} while (tftp_read_block(&tftp_state, ++blknum, 2));
+		} while (tftp_read_block(&state.tftp, ++blknum, 2));
 	    }
 	}
     }
