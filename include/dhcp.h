@@ -100,7 +100,7 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
 		    uint8_t resptype = 0;
 
 		    #define ldx() read_rx(x,r21)
-		    #define ldx_str(v,len) copy_xz(x,v,len)
+		    #define ldx_str(v,len) copy_xz_constz(optptr,v,len)
 
 		    while ((optcode = *(optptr++)) != 255) {
 			if (optcode != 0) {

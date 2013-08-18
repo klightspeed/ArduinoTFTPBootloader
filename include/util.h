@@ -109,61 +109,200 @@ union fourbyte {
 	asm volatile ("st X+, %[val]" : "+x" (x) : [val] "d" (__tmpreg)); \
     } while (0)
 
-#define write_zx_rel(x,z,o) asm volatile ("ldd __tmp_reg__, Z + %[ofs]\r\nst X+, __tmp_reg__" : "+x" (x), "+z" (z) : [ofs] "I" (o))
+#define write_zx_rel(x,z,o) asm volatile ("ldd __tmp_reg__, Z + %[ofs]\r\nst X+, __tmp_reg__" : "+x" (x) : "z" (z), [ofs] "I" (o))
 
 #define write_zero_x(x) asm volatile ("st X+, __zero_reg__" : "+x" (x))
 
+#define compare_const_zx(x,z,len) \
+    ({ \
+	void *__x = (void *)(x); \
+	const void *__z = (const void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	register uint8_t __res asm("r21"); \
+	asm volatile ( \
+	    "call __compare_const_zx" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len), "=r" (__res) \
+	); \
+	__res; \
+    })
+
+#define compare_const_zx_str(x,z,len) \
+    ({ \
+	void *__x = (void *)(x); \
+	const void *__z = (const void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	register uint8_t __res asm("r21"); \
+	asm volatile ( \
+	    "call __compare_const_zx_str" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len), "=r" (__res) \
+	); \
+	__res; \
+    })
+
+#define compare_zx(x,z,len) \
+    ({ \
+	void *__x = (void *)(x); \
+	void *__z = (void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	register uint8_t __res asm("r21"); \
+	asm volatile ( \
+	    "call __compare_zx" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len), "=r" (__res) \
+	); \
+	__res; \
+    })
+
+#define compare_zx_str(x,z,len) \
+    ({ \
+	void *__x = (void *)(x); \
+	void *__z = (void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	register uint8_t __res asm("r21"); \
+	asm volatile ( \
+	    "call __compare_zx_str" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len), "=r" (__res) \
+	); \
+	__res; \
+    })
+
+#define copy_const_zx_constz(x,z,len) \
+    do { \
+	const void *__z = (const void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_const_zx" \
+	    : "+x" (x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_const_zx_str_constz(x,z,len) \
+    do { \
+	const void *__z = (const void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_const_zx_str" \
+	    : "+x" (x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_zx_constz(x,z,len) \
+    do { \
+	void *__z = (void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_zx" \
+	    : "+x" (x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_zx_str_constz(x,z,len) \
+    do { \
+	void *__z = (void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_zx_str" \
+	    : "+x" (x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_const_zx_const(x,z,len) \
+    do { \
+	void *__x = (void *)x; \
+	const void *__z = (const void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_const_zx" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_const_zx_str_const(x,z,len) \
+    do { \
+	void *__x = (void *)x; \
+	const void *__z = (const void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_const_zx_str" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_zx_const(x,z,len) \
+    do { \
+	void *__x = (void *)x; \
+	void *__z = (void *)z; \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_zx" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_zx_str_const(x,z,len) \
+    do { \
+	void *__x = (void *)x; \
+	void *__z = (void *)z; \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_zx_str" \
+	    : "+x" (__x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define zero_x_const(x,len) \
+    do { \
+	void *__x = (void *)x; \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __zero_x" \
+	    : "+x" (__x), "+r" (__len) \
+	); \
+    } while (0)
+
 #define copy_const_zx(x,z,len) \
     do { \
-	uint16_t __dump; \
+	register uint8_t __len asm("r23") = (len) + 1; \
 	asm volatile ( \
-	    "ldi r23, %[ilen]\n\tcall __copy_const_zx" \
-	    : "+x" (x), "=z" (__dump) \
-	    : [ilen] "M" ((len) + 1), "z" (PSTR(z)) \
-	    : "r23" \
+	    "call __copy_const_zx" \
+	    : "+x" (x), "+z" ((const void *)(z)), "+r" (__len) \
 	); \
     } while (0)
 
 #define copy_const_zx_str(x,z,len) \
     do { \
-	uint16_t __dump; \
+	register uint8_t __len asm("r23") = (len) + 1; \
 	asm volatile ( \
-	    "ldi r23, %[ilen]\n\tcall __copy_const_zx_str" \
-	    : "+x" (x), "=z" (__dump) \
-	    : [ilen] "M" ((len) + 1), "z" (PSTR(z)) \
-	    : "r23" \
+	    "call __copy_const_zx_str" \
+	    : "+x" (x), "+z" ((const void *)(z)), "+r" (__len) \
 	); \
     } while (0)
 
 #define copy_zx(x,z,len) \
     do { \
-	uint16_t __dump; \
+	register uint8_t __len asm("r23") = (len) + 1; \
 	asm volatile ( \
-	    "ldi r23, %[ilen]\n\tcall __copy_zx" \
-	    : "+x" (x), "=z" (__dump) \
-	    : [ilen] "M" ((len) + 1), "z" (z) \
-	    : "r23" \
+	    "call __copy_zx" \
+	    : "+x" (x), "+z" (z), "+r" (__len) \
 	); \
     } while (0)
 
 #define copy_zx_str(x,z,len) \
     do { \
-	uint16_t __dump; \
+	register uint8_t __len asm("r23") = (len) + 1; \
 	asm volatile ( \
-	    "ldi r23, %[ilen]\n\tcall __copy_zx_str" \
-	    : "+x" (x), "=z" (__dump) \
-	    : [ilen] "M" ((len) + 1), "z" (z) \
-	    : "r23" \
+	    "call __copy_zx_str" \
+	    : "+x" (x), "+z" (z), "+r" (__len) \
 	); \
     } while (0)
 
 #define zero_x(x,len) \
-    asm volatile ( \
-	"ldi r23, %[ilen]\n\tcall __zero_x" \
-	: "+x" (x) \
-	: [ilen] "M" ((len) + 1) \
-	: "r23" \
-    )
+    do { \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __zero_x" \
+	    : "+x" (x), "+r" (__len) \
+	); \
+    } while (0)
 
 #define read_x(x) \
     ({ \
@@ -179,25 +318,41 @@ union fourbyte {
 	__retval; \
     })
 
+#define copy_xz_constz(x,z,len) \
+    do { \
+    	void *__z = (void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_xz" \
+	    : "+x" (x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
+#define copy_xz_str_constz(x,z,len) \
+    do { \
+    	void *__z = (void *)(z); \
+	register uint8_t __len asm("r23") = (len) + 1; \
+	asm volatile ( \
+	    "call __copy_xz_str" \
+	    : "+x" (x), "+z" (__z), "+r" (__len) \
+	); \
+    } while (0)
+
 #define copy_xz(x,z,len) \
     do { \
-	uint16_t __dump; \
+	register uint8_t __len asm("r23") = (len) + 1; \
 	asm volatile ( \
-	    "ldi r23, %[ilen]\n\tcall __copy_xz" \
-	    : "+x" (optptr), "=z" (__dump) \
-	    : [ilen] "M" ((len) + 1), "z" (z) \
-	    : "r23" \
+	    "call __copy_xz" \
+	    : "+x" (x), "+z" (z), "+r" (__len) \
 	); \
     } while (0)
 
 #define copy_xz_str(x,z,len) \
     do { \
-	uint16_t __dump; \
+	register uint8_t __len asm("r23") = (len) + 1; \
 	asm volatile ( \
-	    "ldi r23, %[ilen]\n\tcall __copy_xz_str" \
-	    : "+x" (optptr), "=z" (__dump) \
-	    : [ilen] "M" ((len) + 1), "z" (z) \
-	    : "r23" \
+	    "call __copy_xz_str" \
+	    : "+x" (x), "+z" (z), "+r" (__len) \
 	); \
     } while (0)
 

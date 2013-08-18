@@ -17,8 +17,8 @@ uint8_t tftp_open(struct ipaddr *ipaddr, char *filename) {
 	tftp_state.packet.opcode[1] = 1;
 
 	char *buf = tftp_state.packet.filename_options;
-	copy_zx_str(buf, filename, 64);
-	copy_zx(buf, "octet\000blksize\000512\000", 18);
+	copy_zx_str_constz(buf, filename, 64);
+	copy_zx_constz(buf, "octet\000blksize\000512\000", 18);
 
 	w5100_send(2, &tftp_state.packet, (uint8_t *)buf - (uint8_t *)&tftp_state.packet);
 
