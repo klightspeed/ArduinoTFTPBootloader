@@ -94,6 +94,8 @@ static inline uint8_t tftp_open(struct tftp_state *state, struct ipaddr *ipaddr,
 	    if (tftp_try_get_response(state, 1, socknum)) {
 	        return 1;
 	    }
+
+	    _delay_ms(10);
 	} while (--recvtries);
     } while (--retries);
 
@@ -118,6 +120,8 @@ static inline uint8_t tftp_read_block(struct tftp_state *state, uint16_t blknum,
 
 	        return 1;
 	    }
+
+	    _delay_ms(10);
 	} while (--recvtries);
     } while (--retries);
 

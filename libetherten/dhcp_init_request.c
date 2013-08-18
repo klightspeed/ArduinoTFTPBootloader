@@ -7,7 +7,7 @@
 void __attribute__((naked)) __dhcp_init_request(void) {
     #define HEADERLEN (offsetof(struct dhcp_state,packet.elapsed))
     #define ZEROLEN (offsetof(struct dhcp_state,packet.dhcpcookie) - offsetof(struct dhcp_state,packet.elapsed))
-    #define OPTRUN1LEN (3 + 2)
+    #define OPTRUN1LEN (3 + 3)
     #define OPTZEROLEN (6 + 6 + 6 + 18)
     #define OPTRUN2LEN (9 + 1)
     #define OPTSLEN (OPTRUN1LEN + OPTZEROLEN + OPTRUN2LEN)

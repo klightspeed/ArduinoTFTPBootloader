@@ -23,22 +23,16 @@ struct dhcp_packet {
     uint8_t hwaddr_pad[10];
     char servername[64];
     char bootfilename[128];
-#ifdef USE_DHCP
     uint8_t dhcpcookie[4];
     uint8_t options[336];
-#else
-    uint8_t bootpopts[64];
-#endif
 };
 
 struct dhcp_ifconfig {
     struct w5100_ifconfig ethconfig;
     struct ipaddr dhcpserver;
-#ifdef USE_DHCP
     char hostname[16];
     struct ipaddr dnsserver;
     struct ipaddr bcastaddr;
-#endif
 };
 
 struct dhcp_state {
@@ -77,12 +71,12 @@ static inline void dhcp_init(struct dhcp_ifconfig *ifconfig, uint8_t socknum) {
 
 static inline void dhcp_send_request(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig, uint8_t reqtype, uint8_t socknum) {
     dhcp_init_request(state, ifconfig, reqtype);
+    get_random_bytes(state->packet.txid, 4);
     w5100_send(socknum, &state->packet, state->packetlen);
 }
 
 static inline uint8_t dhcp_try_get_response(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig, uint8_t socknum) {
     if (w5100_udp_try_recv(socknum, &state->udppacket)) {
-
 	if (state->packet.msgtype == 2) {
 	    if (!compare_zx(&state->packet.hwaddr, &ifconfig->ethconfig.hwaddr, 6)) {
 		uint8_t *optptr = state->packet.options;
@@ -116,9 +110,10 @@ static inline uint8_t dhcp_try_get_response(struct dhcp_state *state, struct dhc
 		}
 
 		if (resptype == 2 || resptype == 5) {
-		    if (compare_const_zx(&state->packet.yourip, "\0\0\0\0", 4)) {
+		    if (compare_const_zx(&state->packet.yourip, PSTR("\0\0\0\0"), 4)) {
 			optptr = (uint8_t *)&state->packet.yourip;
 			ldx_str(&ifconfig->ethconfig.ipaddr, 4);
+			
 			for (int i = 0; i < 4; i++) {
 			    ifconfig->bcastaddr.octet[i] = ifconfig->ethconfig.ipaddr.octet[i] | ((uint8_t)(~ifconfig->ethconfig.subnet.octet[i]));
 			}
@@ -134,7 +129,6 @@ static inline uint8_t dhcp_try_get_response(struct dhcp_state *state, struct dhc
 
     return 0;
 }
-   
 
 static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig, uint8_t socknum) {
     uint8_t reqtype = 1;
@@ -143,22 +137,23 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
     dhcp_init(ifconfig, socknum);
 
     do {
-        uint8_t resptype;
-	uint8_t recvtries = 100;
-	dhcp_send_request(state, ifconfig, socknum, reqtype);
+        uint8_t recvtries = 100;
+	
+	dhcp_send_request(state, ifconfig, reqtype, socknum);
+	
 	do {
-	    resptype = dhcp_try_get_response(state, ifconfig, socknum);
+	    uint8_t resptype = dhcp_try_get_response(state, ifconfig, socknum);
 
-	    if (resptype == 2) {
-	        reqtype = 3;
+	    if (reqtype == 1 && resptype == 2) {
+		reqtype = 3;
 		retries = 4;
 		break;
 	    } else if (resptype == 5) {
-	        return;
+		return;
 	    } else if (resptype == 6) {
-	        reqtype = 1;
+		reqtype = 1;
 		retries = 4;
-		break;
+		break; 
 	    }
 
 	    _delay_ms(10);

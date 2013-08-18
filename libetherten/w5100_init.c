@@ -23,17 +23,22 @@ struct w5100_regs_base w5100_reginit = {
 };
 
 void w5100_init(struct w5100_ifconfig *ifconfig) {
+    static struct w5100_ifconfig _ifconfig;
+
     W5100_PORT |= _BV(W5100_SS_BIT);
     W5100_DDR |= _BV(W5100_SS_BIT);
 
     w5100_spi_setup(W5100_SPI_CLK_DIV);
 
     if (ifconfig != NULL) {
-        memcpy (&w5100_reginit.ifconfig, ifconfig, sizeof w5100_reginit.ifconfig);
+        copy_zx_const (&w5100_reginit.ifconfig, ifconfig, sizeof w5100_reginit.ifconfig);
     }
 
-    _delay_ms(200);
-
-    w5100_write_mem(0, &w5100_reginit, sizeof w5100_reginit);
+    do {
+	_delay_ms(200);
+       
+	w5100_write_mem(0, &w5100_reginit, sizeof w5100_reginit);
+	w5100_read_mem(1, &_ifconfig, sizeof _ifconfig);
+    } while (compare_zx(&_ifconfig, ifconfig, sizeof _ifconfig));
 }
 
