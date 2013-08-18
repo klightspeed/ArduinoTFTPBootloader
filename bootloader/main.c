@@ -28,9 +28,6 @@ int main (void) {
     MCUCR = (1<<IVCE);
     MCUCR = (1<<IVSEL);
 
-    // Wait for W5100 startup
-    _delay_ms(200);
-
     sdcard_init();
 
     load_eeprom_data();
