@@ -89,8 +89,11 @@ static inline uint8_t tftp_open(struct tftp_state *state, struct ipaddr *ipaddr,
 
     do {
         uint8_t recvtries = 50;
+
+	wdt_reset();
         tftp_send_rrq(state, filename, socknum);
 	do {
+	    wdt_reset();
 	    if (tftp_try_get_response(state, 1, socknum)) {
 	        return 1;
 	    }
@@ -107,9 +110,11 @@ static inline uint8_t tftp_read_block(struct tftp_state *state, uint16_t blknum,
 
     do {
         uint8_t recvtries = 50;
+	wdt_reset();
 	tftp_send_ack(state, blknum, socknum);
 
 	do {
+	    wdt_reset();
 	    if (tftp_try_get_response(state, blknum + 1, socknum)) {
 		if (state->packetlen == 4) {
 		    state->packet.opcode[1] = 4;

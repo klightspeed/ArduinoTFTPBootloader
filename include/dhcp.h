@@ -138,10 +138,13 @@ static inline void dhcp_get_address(struct dhcp_state *state, struct dhcp_ifconf
 
     do {
         uint8_t recvtries = 100;
+
+	wdt_reset();
 	
 	dhcp_send_request(state, ifconfig, reqtype, socknum);
 	
 	do {
+	    wdt_reset();
 	    uint8_t resptype = dhcp_try_get_response(state, ifconfig, socknum);
 
 	    if (reqtype == 1 && resptype == 2) {

@@ -17,8 +17,8 @@ __sram_seed_random:
 	adc r8, r1
 	cpi r27, 9
 	brne 1b
-	sts sram_rand, r8
-	sts sram_rand + 1, r9
-	sts sram_rand + 2, r10
-	sts sram_rand + 3, r11
+	sts sram_random_seed, r8
+	sts sram_random_seed + 1, r9
+	sts sram_random_seed + 2, r10
+	sts sram_random_seed + 3, r11
 

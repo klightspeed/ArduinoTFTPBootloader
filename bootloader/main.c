@@ -8,6 +8,7 @@
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 #include <avr/boot.h>
+#include <avr/wdt.h>
 #include "spi.h"
 #include "w5100.h"
 #include "util.h"
@@ -26,6 +27,9 @@ static union {
 } state;
 
 int main (void) {
+    wdt_reset();
+    wdt_enable(WDTO_1S);
+    seed_pseudorandom();
     char *firmware_filename = NULL;
 
     MCUCR = (1<<IVCE);
@@ -38,6 +42,8 @@ int main (void) {
     if (eeprom_boot_data.usedhcp) {
         dhcp_get_address(&state.dhcp, &eeprom_boot_data.ifconfig, 2);
     }
+
+    wdt_reset();
 
     if (compare_const_zx(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, PSTR("\0\0\0\0"), 4)) {
 	w5100_init(&eeprom_boot_data.ifconfig.ethconfig);
@@ -57,6 +63,8 @@ int main (void) {
 	    firmware_filename = DEFAULT_FW_FILENAME2;
 	}
 
+	wdt_reset();
+
 	if (firmware_filename) {
 	    uint16_t blknum = 0;
 	    uint8_t flashchanged = 0;
@@ -65,6 +73,8 @@ int main (void) {
 	    do {
 		uint16_t datalen = state.tftp.packetlen - 4;
 		uint8_t *data = state.tftp.packet.data;
+
+		wdt_reset();
 
 		if (blknum < ((32768 - 4096) / 512)) {
 		    if (compare_const_zx(data, (void *)(blknum * 512), datalen)) {
@@ -86,6 +96,7 @@ int main (void) {
 		    uint16_t sectpage = blknum * 512;
 
 		    for (int pageaddr = 0; pageaddr < datalen; pageaddr += SPM_PAGESIZE) {
+		        wdt_reset();
 			flash_write_page((void *)(sectpage + pageaddr), data + pageaddr);
 		    }
 		} while (tftp_read_block(&state.tftp, ++blknum, 2));
