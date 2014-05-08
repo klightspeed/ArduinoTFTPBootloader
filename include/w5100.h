@@ -365,6 +365,31 @@ static inline void w5100_udp_bind(uint8_t socknum, uint16_t port) {
     }
 }
 
+static inline int w5100_tcp_try_recv(uint8_t socknum, uint8_t *buf, int maxread, int minread) {
+    int rxavail = w5100_sock_rxavail(socknum);
+
+    if (rxavail >= (minread ?: 1)) {
+        if (rxavail > maxread) {
+            rxavail = maxread;
+        }
+
+        __w5100_sock_rw_mem(socknum, buf, rxavail, W5100_OP_RECV_RAM);
+        return rxavail;
+    }
+
+    return 0;
+}
+
+static inline int w5100_tcp_recv(uint8_t socknum, uint8_t *buf, int maxread, int minread, int timeout) {
+    while (timeout--) {
+        int len = w5100_tcp_try_recv(socknum, buf, maxread, minread);
+        if (len) return len;
+        _delay_ms(1);
+    }
+
+    return w5100_tcp_try_recv(socknum, buf, maxread, 1);
+}
+
 #endif /* __ASSEMBLER__ */
 
 #endif /* W5100_H */

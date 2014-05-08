@@ -26,6 +26,64 @@ static union {
     struct tftp_state tftp;
 } state;
 
+void write_flash_sector(void *data, uint16_t sectpage, int datalen) {
+    if (sectpage < 28672) {
+        for (int pageaddr = 0; pageaddr < datalen; pageaddr += SPM_PAGESIZE) {
+            if (compare_const_zx(data, (void *)(sectpage + pageaddr), SPM_PAGESIZE)) {
+                wdt_reset();
+                flash_write_page((void *)(sectpage + pageaddr), data + pageaddr);
+            }
+        }
+    }
+}
+
+void copy_tftp_flash(uint8_t socknum) {
+    uint16_t blknum = 0;
+
+    memset (&state, 0, sizeof(state));
+    while (tftp_read_block(&state.tftp, blknum, 2)) {
+        uint16_t datalen = state.tftp.packetlen - 4;
+        uint8_t *data = state.tftp.packet.data;
+        uint16_t sectpage = blknum * 512;
+
+        wdt_reset();
+
+        if (sectpage < 28672) {
+            write_flash_sector(data, sectpage, datalen);
+        } else {
+            break;
+        }
+
+        blknum++;
+    } 
+
+    __reboot_application();
+}
+
+void copy_tcp_flash(uint8_t socknum) {
+    uint16_t pos = 0;
+    uint8_t data[SPM_PAGESIZE];
+
+    while (pos < 28672) {
+        memset (data, 0, sizeof(data));
+        int len = w5100_tcp_recv(socknum, data, SPM_PAGESIZE, SPM_PAGESIZE, 1000);
+        
+        if (len) {
+            write_flash_sector(data, pos, len);
+            pos += len;
+        }
+
+        if (len != SPM_PAGESIZE) {
+            w5100_sock_close(socknum);
+            break;
+        }
+
+        w5100_send_p(socknum, (void *)PSTR(""), 1);
+    }
+
+    __reboot_application();
+}
+
 int main (void) {
     wdt_reset();
     wdt_enable(WDTO_1S);
@@ -66,41 +124,7 @@ int main (void) {
 	wdt_reset();
 
 	if (firmware_filename) {
-	    uint16_t blknum = 0;
-	    uint8_t flashchanged = 0;
-	    uint8_t filevalid = 1;
-
-	    do {
-		uint16_t datalen = state.tftp.packetlen - 4;
-		uint8_t *data = state.tftp.packet.data;
-
-		wdt_reset();
-
-		if (blknum < ((32768 - 4096) / 512)) {
-		    if (compare_const_zx(data, (void *)(blknum * 512), datalen)) {
-			flashchanged = 1;
-		    }
-		} else {
-		    filevalid = 0;
-		    break;
-		}
-	    } while (tftp_read_block(&state.tftp, ++blknum, 2));
-
-	    if (flashchanged && filevalid) {
-		blknum = 0;
-		tftp_open(&state.tftp, &eeprom_boot_data.ifconfig.bcastaddr, firmware_filename, 2);
-
-		do {
-		    uint16_t datalen = state.tftp.packetlen - 4;
-		    void *data = state.tftp.packet.data;
-		    uint16_t sectpage = blknum * 512;
-
-		    for (int pageaddr = 0; pageaddr < datalen; pageaddr += SPM_PAGESIZE) {
-		        wdt_reset();
-			flash_write_page((void *)(sectpage + pageaddr), data + pageaddr);
-		    }
-		} while (tftp_read_block(&state.tftp, ++blknum, 2));
-	    }
+            copy_tftp_flash(2);
 	}
     }
 

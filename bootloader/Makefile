@@ -1,4 +1,4 @@
-OBJS = main.o
+OBJS = main.o vectors.o
 PRG = bootloader
 LIBS = -letherten
 
