@@ -46,8 +46,6 @@ void copy_tftp_flash(uint8_t socknum) {
         uint8_t *data = state.tftp.packet.data;
         uint16_t sectpage = blknum * 512;
 
-        wdt_reset();
-
         if (sectpage < 28672) {
             write_flash_sector(data, sectpage, datalen);
         } else {
@@ -85,10 +83,18 @@ void copy_tcp_flash(uint8_t socknum) {
 }
 
 int main (void) {
+    char *try_filenames[] = {
+        eeprom_boot_data.firmware_filename,
+        DEFAULT_FW_FILENAME,
+        DEFAULT_FW_FILENAME2,
+        NULL
+    };
+    char **try_filename = try_filenames;
+    char *firmware_filename = NULL;
+
     wdt_reset();
     wdt_enable(WDTO_1S);
     seed_pseudorandom();
-    char *firmware_filename = NULL;
 
     MCUCR = (1<<IVCE);
     MCUCR = (1<<IVSEL);
@@ -104,28 +110,28 @@ int main (void) {
     wdt_reset();
 
     if (compare_const_zx(&eeprom_boot_data.ifconfig.ethconfig.ipaddr, PSTR("\0\0\0\0"), 4)) {
-	w5100_init(&eeprom_boot_data.ifconfig.ethconfig);
-	/*
-	w5100_udp_bind(3, 9);
-	w5100_set_destipaddr(3, &gbcastipaddr);
-	w5100_set_desthwaddr(3, &bcasthwaddr);
-	w5100_set_destport(3, 9);
-	 */
+        w5100_init(&eeprom_boot_data.ifconfig.ethconfig);
+        /*
+        w5100_udp_bind(3, 9);
+        w5100_set_destipaddr(3, &gbcastipaddr);
+        w5100_set_desthwaddr(3, &bcasthwaddr);
+        w5100_set_destport(3, 9);
+         */
 
-	if (eeprom_boot_data.firmware_filename[0] != 0 && 
-	    tftp_open(&state.tftp, &eeprom_boot_data.ifconfig.bcastaddr, eeprom_boot_data.firmware_filename, 2)) {
-	    firmware_filename = eeprom_boot_data.firmware_filename;
-	} else if (tftp_open(&state.tftp, &eeprom_boot_data.ifconfig.bcastaddr, DEFAULT_FW_FILENAME, 2)) {
-	    firmware_filename = DEFAULT_FW_FILENAME;
-	} else if (tftp_open(&state.tftp, &eeprom_boot_data.ifconfig.bcastaddr, DEFAULT_FW_FILENAME2, 2)) {
-	    firmware_filename = DEFAULT_FW_FILENAME2;
-	}
+        while (*try_filename != NULL) {
+            if (*try_filename[0] != 0 && tftp_open(&state.tftp, &eeprom_boot_data.ifconfig.bcastaddr, *try_filename, 2)) {
+                firmware_filename = *try_filenames;
+                break;
+            }
 
-	wdt_reset();
+            try_filename++;
+        }
 
-	if (firmware_filename) {
+        wdt_reset();
+
+        if (firmware_filename) {
             copy_tftp_flash(2);
-	}
+        }
     }
 
     __reboot_application();
