@@ -4,6 +4,7 @@
 #include "config.h"
 #include <stdint.h>
 #include <string.h>
+#include <avr/wdt.h>
 #include "w5100.h"
 #include "random.h"
 

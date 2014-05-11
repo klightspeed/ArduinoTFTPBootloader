@@ -7,8 +7,6 @@ all: libetherten bootloader updater bootsafe
 $(SUBDIRS):
 	$(MAKE) -C $@
 
-libetherten: bootsafe
-
 updater: libetherten bootloader bootsafe
 
 bootloader: libetherten bootsafe
