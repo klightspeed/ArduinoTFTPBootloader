@@ -55,15 +55,15 @@ differs from the contents of the application flash.
 
 It also provides a couple of utility functions:
 
-* __copy_tftp_flash(socket) - reads and flashes a file
-  from a given TFTP connection to application flash -
-  used for application self-updating from e.g. a TFTP
-  client
+* __copy_tftp_flash(socket) - reads and flashes up to
+  28kB of a file from a given TFTP connection to 
+  application flash - used for application self-updating 
+  from e.g. a TFTP client
 
-* __copy_tcp_flash(socket) - reads and flashes the data
-  from a given TCP stream to application flash - used
-  for application self-updating from e.g. a HTTP PUT
-  request
+* __copy_tcp_flash(socket) - reads and flashes up to
+  28kB of data from a given TCP stream to application 
+  flash - used for application self-updating from e.g. 
+  a HTTP PUT request
 
 
 updater:
