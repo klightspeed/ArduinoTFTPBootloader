@@ -50,9 +50,20 @@ read request for one of three files:
 
 * The file "\Boot\EtherTen.bin"
 
-If the file contents are different to the contents of
-the application flash, and it is less than 28kB in size, 
-it will re-read the file and write it to flash.
+It will read up to 28kB of the file and flash it if it
+differs from the contents of the application flash.
+
+It also provides a couple of utility functions:
+
+* __copy_tftp_flash(socket) - reads and flashes a file
+  from a given TFTP connection to application flash -
+  used for application self-updating from e.g. a TFTP
+  client
+
+* __copy_tcp_flash(socket) - reads and flashes the data
+  from a given TCP stream to application flash - used
+  for application self-updating from e.g. a HTTP PUT
+  request
 
 
 updater:
