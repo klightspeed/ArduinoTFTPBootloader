@@ -227,16 +227,16 @@ void __w5100_sock_cmd(uint8_t socknum, uint8_t cmd);
 
 #define __w5100_write_byte(address,value,op) \
     { \
-	register uint16_t __address asm("r24") = (address); \
-	register uint8_t __value asm("r22") = (value); \
-	register uint8_t __op asm("r20") = (op); \
-	asm volatile ("call ___w5100_write_byte" : : "w" (__address), "r" (__value), "r" (__op)); \
+        register uint16_t __address asm("r24") = (address); \
+        register uint8_t __value asm("r22") = (value); \
+        register uint8_t __op asm("r20") = (op); \
+        asm volatile ("call ___w5100_write_byte" : : "w" (__address), "r" (__value), "r" (__op)); \
     } while (0)
 
 #define __w5100_rw_byte(address,value,op) \
     ({ \
         __w5100_write_byte(address, value, op); \
-	(op == W5100_OP_READ) ? w5100_spi_read() : 0; \
+        (op == W5100_OP_READ) ? w5100_spi_read() : 0; \
     })
 
 #define w5100_write_byte(address,value) __w5100_rw_byte(address, value, W5100_OP_WRITE)
@@ -245,40 +245,40 @@ void __w5100_sock_cmd(uint8_t socknum, uint8_t cmd);
 #define w5100_write_word(address,value) \
     do { \
         register uint16_t __address asm("r24") = address; \
-	register uint8_t __vallo asm("r22") = LO8(value); \
-	register uint8_t __op asm("r20") = W5100_OP_WRITE; \
-	uint8_t __valhi = HI8(value); \
-	asm volatile ( \
-	    "adiw r24, 1\n\t" \
-	    "call ___w5100_write_byte\n\t" \
-	    "sbiw r24, 1\n\t" \
-	    "mov %[vallo], %[valhi]\n\t" \
-	    "call ___w5100_write_byte\n\t" \
-	    : [vallo] "+r" (__vallo) \
-	    : "w" (__address), [valhi] "r" (__valhi), "r" (__op) \
-	); \
+        register uint8_t __vallo asm("r22") = LO8(value); \
+        register uint8_t __op asm("r20") = W5100_OP_WRITE; \
+        uint8_t __valhi = HI8(value); \
+        asm volatile ( \
+            "adiw r24, 1\n\t" \
+            "call ___w5100_write_byte\n\t" \
+            "sbiw r24, 1\n\t" \
+            "mov %[vallo], %[valhi]\n\t" \
+            "call ___w5100_write_byte\n\t" \
+            : [vallo] "+r" (__vallo) \
+            : "w" (__address), [valhi] "r" (__valhi), "r" (__op) \
+        ); \
     } while (0)
 
 #define w5100_read_word(address) \
     ({ \
         union twobyte __value; \
         register uint16_t __address asm("r24") = address; \
-	register uint8_t __vallo asm("r22") = 0xFF; \
-	register uint8_t __op asm("r20") = W5100_OP_READ; \
-	asm volatile ( \
-	    "adiw r24, 1\n\t" \
-	    "call ___w5100_write_byte\n\t" \
-	    "sbiw r24, 1\n\t" \
-	    : : "w" (__address), "r" (__vallo), "r" (__op) \
-	); \
-	__value.byte[0] = w5100_spi_read(); \
-	__vallo = 0xFF; \
-	asm volatile ( \
-	    "call ___w5100_write_byte\n\t" \
-	    : : "w" (__address), "r" (__vallo), "r" (__op) \
-	); \
-	__value.byte[1] = w5100_spi_read(); \
-	__value.word; \
+        register uint8_t __vallo asm("r22") = 0xFF; \
+        register uint8_t __op asm("r20") = W5100_OP_READ; \
+        asm volatile ( \
+            "adiw r24, 1\n\t" \
+            "call ___w5100_write_byte\n\t" \
+            "sbiw r24, 1\n\t" \
+            : : "w" (__address), "r" (__vallo), "r" (__op) \
+        ); \
+        __value.byte[0] = w5100_spi_read(); \
+        __vallo = 0xFF; \
+        asm volatile ( \
+            "call ___w5100_write_byte\n\t" \
+            : : "w" (__address), "r" (__vallo), "r" (__op) \
+        ); \
+        __value.byte[1] = w5100_spi_read(); \
+        __value.word; \
     })
 
 #define w5100_write_mem(address,value,len) __w5100_rw_mem(address, value, len, W5100_OP_WRITE_RAM)
@@ -294,9 +294,9 @@ void __w5100_sock_cmd(uint8_t socknum, uint8_t cmd);
 
 #define w5100_sock_cmd(socknum,cmd) \
     { \
-	register uint8_t __socknum asm("r24") = (socknum); \
-	register uint8_t __cmd asm("r22") = (cmd); \
-	asm volatile ( "call __w5100_sock_cmd" : "+r" (__socknum), "+r" (__cmd) : : "r25", "r20", "r0"); \
+        register uint8_t __socknum asm("r24") = (socknum); \
+        register uint8_t __cmd asm("r22") = (cmd); \
+        asm volatile ( "call __w5100_sock_cmd" : "+r" (__socknum), "+r" (__cmd) : : "r25", "r20", "r0"); \
     } while (0)
 
 #define w5100_sock_close(socknum) w5100_sock_cmd(socknum, W5100_CR_CLOSE)
@@ -335,11 +335,11 @@ static inline int w5100_udp_peek(uint8_t socknum, struct w5100_udp_packet *packe
 
 static inline int w5100_udp_try_recv(uint8_t socknum, struct w5100_udp_packet *packet) {
     if (w5100_sock_rxavail(socknum) != 0) {
-	__w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM, 0);
-	BYTESWAP(&packet->port);
-	BYTESWAP(&packet->len);
-	__w5100_sock_rw_mem(socknum, packet->data, packet->len, W5100_OP_RECV_RAM, 0);
-	return 1;
+        __w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM, 0);
+        BYTESWAP(&packet->port);
+        BYTESWAP(&packet->len);
+        __w5100_sock_rw_mem(socknum, packet->data, packet->len, W5100_OP_RECV_RAM, 0);
+        return 1;
     }
 
     return 0;
@@ -347,17 +347,17 @@ static inline int w5100_udp_try_recv(uint8_t socknum, struct w5100_udp_packet *p
 
 static inline void w5100_udp_end_recv(uint8_t socknum, struct w5100_udp_packet *packet) {
     if (w5100_sock_rxavail(socknum) != 0) {
-	__w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM, 0);
-	BYTESWAP(&packet->port);
-	BYTESWAP(&packet->len);
-	__w5100_sock_rw_mem(socknum, packet->data, 0, W5100_OP_RECV_RAM, packet->len);
+        __w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM, 0);
+        BYTESWAP(&packet->port);
+        BYTESWAP(&packet->len);
+        __w5100_sock_rw_mem(socknum, packet->data, 0, W5100_OP_RECV_RAM, packet->len);
     }
 }
 
 static inline int w5100_udp_recv(uint8_t socknum, struct w5100_udp_packet *packet, int timeout) {
     while (timeout--) {
         if (w5100_udp_try_recv(socknum, packet)) return 1;
-	_delay_ms(1);
+        _delay_ms(1);
     }
 
     return 0;
@@ -366,10 +366,10 @@ static inline int w5100_udp_recv(uint8_t socknum, struct w5100_udp_packet *packe
 static inline int w5100_udp_wait(uint8_t socknum, struct w5100_udp_packet *packet, int timeout) {
     while (timeout--) {
         if (w5100_sock_rxavail(socknum) != 0) {
-	    w5100_udp_peek(socknum, packet);
-	    return 1;
-	}
-	_delay_ms(1);
+            w5100_udp_peek(socknum, packet);
+            return 1;
+        }
+        _delay_ms(1);
     }
 
     return 0;
@@ -378,14 +378,14 @@ static inline int w5100_udp_wait(uint8_t socknum, struct w5100_udp_packet *packe
 static inline void w5100_udp_bind(uint8_t socknum, uint16_t port) {
     while (1) {
         w5100_write_byte(W5100_SOCK_REGADDR(socknum, mode), W5100_MR_UDP);
-	w5100_write_word(W5100_SOCK_REGADDR(socknum, srcport), port);
-	w5100_sock_cmd(socknum, W5100_CR_OPEN);
+        w5100_write_word(W5100_SOCK_REGADDR(socknum, srcport), port);
+        w5100_sock_cmd(socknum, W5100_CR_OPEN);
 
-	if (w5100_read_byte(W5100_SOCK_REGADDR(socknum, status)) == W5100_SOCK_UDP) {
-	    break;
-	} else {
-	    w5100_sock_cmd(socknum, W5100_CR_CLOSE);
-	}
+        if (w5100_read_byte(W5100_SOCK_REGADDR(socknum, status)) == W5100_SOCK_UDP) {
+            break;
+        } else {
+            w5100_sock_cmd(socknum, W5100_CR_CLOSE);
+        }
     }
 }
 

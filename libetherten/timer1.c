@@ -25,10 +25,10 @@ ISR(TIMER1_COMPA_vect)
     time_ms++;
     if (unlikely(time_ms >= 1000)) {
         time_ms = 0;
-	time_sec++;
-	if (unlikely(time_sec == 0)) {
-	    time_epoch++;
-	}
+        time_sec++;
+        if (unlikely(time_sec == 0)) {
+            time_epoch++;
+        }
     }
 }
 

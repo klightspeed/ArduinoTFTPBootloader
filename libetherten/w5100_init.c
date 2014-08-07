@@ -9,9 +9,9 @@ struct w5100_regs_base w5100_reginit = {
     .mode = 0x80,
     .ifconfig = {
         .gateway = { { 0, 0, 0, 0 } },
-	.subnet = { { 0, 0, 0, 0 } },
-	.hwaddr = { { 0xFE, 0xFD, 0, 0, 0, 1 } },
-	.ipaddr = { { 0, 0, 0, 0 } }
+        .subnet = { { 0, 0, 0, 0 } },
+        .hwaddr = { { 0xFE, 0xFD, 0, 0, 0, 1 } },
+        .ipaddr = { { 0, 0, 0, 0 } }
     },
 
     .intreg = 0,
@@ -35,10 +35,10 @@ void w5100_init(struct w5100_ifconfig *ifconfig) {
     }
 
     do {
-	_delay_ms(200);
-       
-	w5100_write_mem(0, &w5100_reginit, sizeof w5100_reginit);
-	w5100_read_mem(1, &_ifconfig, sizeof _ifconfig);
+        _delay_ms(200);
+
+        w5100_write_mem(0, &w5100_reginit, sizeof w5100_reginit);
+        w5100_read_mem(1, &_ifconfig, sizeof _ifconfig);
     } while (compare_zx(&_ifconfig, ifconfig, sizeof _ifconfig));
 }
 

@@ -17,33 +17,33 @@
 #define sdcard_init() \
     do { \
         const char *cmd = PSTR("\x40\x00\x00\x00\x00\x95"); \
-	sdcard_spi_setup(128); \
-	PORTB |= SDCARDS_PORTB; \
-	PORTD |= SDCARDS_PORTD; \
-	DDRB |= SDCARDS_PORTB; \
-	DDRD |= SDCARDS_PORTD; \
-	for (int __i = 0; __i < 32; __i++) { \
-	    sdcard_spi_write(0xFF); \
-	    sdcard_spi_wait(); \
-	} \
-	PORTB &= ~SDCARDS_PORTB; \
-	PORTD &= ~SDCARDS_PORTD; \
-	for (int __i = 0; __i < 6; __i++) { \
-	    uint8_t b; \
-	    asm volatile ("lpm %0, Z+" : "=r" (b), "+z" (cmd)); \
-	    sdcard_spi_write(b); \
-	    sdcard_spi_wait(); \
-	} \
-	for (int __i = 0; __i < 32; __i++) { \
-	    sdcard_spi_write(0xFF); \
-	    sdcard_spi_wait(); \
-	} \
-	PORTB |= SDCARDS_PORTB; \
-	PORTD |= SDCARDS_PORTD; \
-	for (int __i = 0; __i < 32; __i++) { \
-	    sdcard_spi_write(0xFF); \
-	    sdcard_spi_wait(); \
-	} \
+        sdcard_spi_setup(128); \
+        PORTB |= SDCARDS_PORTB; \
+        PORTD |= SDCARDS_PORTD; \
+        DDRB |= SDCARDS_PORTB; \
+        DDRD |= SDCARDS_PORTD; \
+        for (int __i = 0; __i < 32; __i++) { \
+            sdcard_spi_write(0xFF); \
+            sdcard_spi_wait(); \
+        } \
+        PORTB &= ~SDCARDS_PORTB; \
+        PORTD &= ~SDCARDS_PORTD; \
+        for (int __i = 0; __i < 6; __i++) { \
+            uint8_t b; \
+            asm volatile ("lpm %0, Z+" : "=r" (b), "+z" (cmd)); \
+            sdcard_spi_write(b); \
+            sdcard_spi_wait(); \
+        } \
+        for (int __i = 0; __i < 32; __i++) { \
+            sdcard_spi_write(0xFF); \
+            sdcard_spi_wait(); \
+        } \
+        PORTB |= SDCARDS_PORTB; \
+        PORTD |= SDCARDS_PORTD; \
+        for (int __i = 0; __i < 32; __i++) { \
+            sdcard_spi_write(0xFF); \
+            sdcard_spi_wait(); \
+        } \
     } while (0)
 
 #endif

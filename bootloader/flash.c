@@ -27,7 +27,7 @@ void copy_tftp_flash(struct tftp_state *state, uint8_t socknum) {
         }
 
         blknum++;
-    } 
+    }
 
     __reboot_application();
 }
@@ -39,7 +39,7 @@ void copy_tcp_flash(uint8_t socknum) {
     while (pos < 28672) {
         memset (data, 0, sizeof(data));
         int len = w5100_tcp_recv(socknum, data, SPM_PAGESIZE, SPM_PAGESIZE, 1000);
-        
+
         if (len) {
             if (compare_const_zx(data, (void *)pos, len)) {
                 wdt_reset();
