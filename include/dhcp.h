@@ -72,7 +72,9 @@ static inline void dhcp_init(struct dhcp_ifconfig *ifconfig, uint8_t socknum) {
 
 static inline void dhcp_send_request(struct dhcp_state *state, struct dhcp_ifconfig *ifconfig, uint8_t reqtype, uint8_t socknum) {
     dhcp_init_request(state, ifconfig, reqtype);
+#ifdef CONFIG_DHCP_RANDOM_XID
     get_random_bytes(state->packet.txid, 4);
+#endif /* CONFIG_DHCP_RANDOM_XID */
     w5100_send(socknum, &state->packet, state->packetlen);
 }
 

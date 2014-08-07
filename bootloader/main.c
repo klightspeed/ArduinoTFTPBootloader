@@ -94,7 +94,9 @@ int main (void) {
 
     wdt_reset();
     wdt_enable(WDTO_1S);
+#if defined(CONFIG_DHCP_RANDON_XID) || defined(CONFIG_RANDOM_HWADDR)
     seed_pseudorandom();
+#endif
 
     MCUCR = (1<<IVCE);
     MCUCR = (1<<IVSEL);
