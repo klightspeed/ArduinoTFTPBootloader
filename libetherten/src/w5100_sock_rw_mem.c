@@ -1,7 +1,7 @@
-#include "config.h"
-#include "w5100.h"
+#include "libetherten/config.h"
+#include "libetherten/w5100.h"
 #include <avr/io.h>
-#include "util.h"
+#include "libetherten/util.h"
 
 void __attribute__((__naked__)) __w5100_sock_rw_mem(uint8_t socknum, void *buf, int len, uint16_t optype, int offset) {
     asm volatile (

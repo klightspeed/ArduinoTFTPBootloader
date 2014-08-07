@@ -5,8 +5,6 @@
 
 extern void *__vectors;
 
-
-
 void ___flash_write_page(void *pageaddr, void *src, uint16_t valid1, uint16_t valid2) {
     if ((valid1 ^ (uint16_t)pageaddr) == 0xc0de && (valid2 ^ (uint16_t)src) == 0xcafe && (uint16_t)pageaddr < (uint16_t)(&__vectors)) {
         if (compare_const_zx(src, pageaddr, SPM_PAGESIZE)) {

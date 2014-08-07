@@ -1,4 +1,5 @@
 #include "config.h"
+#include "libetherten/config.h"
 #include <stdint.h>
 #include <avr/io.h>
 #include <stdio.h>
@@ -9,16 +10,16 @@
 #include <avr/eeprom.h>
 #include <avr/boot.h>
 #include <avr/wdt.h>
-#include "spi.h"
-#include "w5100.h"
-#include "util.h"
-#include "random.h"
-#include "eeprom.h"
-#include "dhcp.h"
-#include "tftp.h"
-#include "sdcard.h"
+#include "libetherten/spi.h"
+#include "libetherten/w5100.h"
+#include "libetherten/util.h"
+#include "libetherten/random.h"
+#include "libetherten/eeprom.h"
+#include "libetherten/dhcp.h"
+#include "libetherten/tftp.h"
+#include "libetherten/sdcard.h"
+#include "libetherten/flash.h"
 #include "multiboot.h"
-#include "flash.h"
 #include "boot-funcs.h"
 #include "writeflash.h"
 

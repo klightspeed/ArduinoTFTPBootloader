@@ -1,11 +1,11 @@
-#include "config.h"
+#include "libetherten/config.h"
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <avr/boot.h>
 #include <string.h>
 #include <util/delay.h>
 #include "bootloader.h"
-#include "flash.h"
+#include "libetherten/flash.h"
 
 void __bootloader_start(void);
 

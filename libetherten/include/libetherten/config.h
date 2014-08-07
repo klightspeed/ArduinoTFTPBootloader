@@ -5,11 +5,10 @@
 #define DEFAULT_SPI_CLK_DIV 64
 #define W5100_SPI_CLK_DIV 64
 #define USEASMFUNC
-#define DEFAULT_FW_FILENAME "EtherTen.bin"
-#define DEFAULT_FW_FILENAME2 "\\Boot\\EtherTen.bin"
 #define SDCARDS_PORTB (_BV(PB1))
 #define SDCARDS_PORTD (_BV(PD4))
 /* #define CONFIG_DHCP_RANDOM_XID */
 /* #define CONFIG_RANDOM_HWADDR */
+/* #define CONFIG_INIT_EEPROM_BOOTDATA */
 
 #endif /* CONFIG_H */

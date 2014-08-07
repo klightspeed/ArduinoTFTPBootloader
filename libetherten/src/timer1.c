@@ -1,8 +1,8 @@
-#include "config.h"
+#include "libetherten/config.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdint.h>
-#include "util.h"
+#include "libetherten/util.h"
 
 volatile uint32_t time_epoch;
 volatile uint32_t time_sec;

@@ -1,8 +1,8 @@
-#include "config.h"
+#include "libetherten/config.h"
 #include <stdint.h>
-#include "flash.h"
-#include "w5100.h"
-#include "tftp.h"
+#include "libetherten/flash.h"
+#include "libetherten/w5100.h"
+#include "libetherten/tftp.h"
 #include "boot-funcs.h"
 #include "writeflash.h"
 

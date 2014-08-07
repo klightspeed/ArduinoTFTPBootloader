@@ -1,5 +1,5 @@
-#include "config.h"
-#include "w5100.h"
+#include "libetherten/config.h"
+#include "libetherten/w5100.h"
 #include <avr/io.h>
 
 void __attribute__((__naked__)) __w5100_rw_mem(uint16_t address, void *buf, int len, uint16_t optype) {

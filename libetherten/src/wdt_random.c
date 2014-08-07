@@ -1,4 +1,4 @@
-#include "config.h"
+#include "libetherten/config.h"
 #include <stdint.h>
 #include <avr/io.h>
 #include <avr/wdt.h>

@@ -1,9 +1,9 @@
-#include "config.h"
-#include "w5100.h"
+#include "libetherten/config.h"
+#include "libetherten/w5100.h"
 #include <avr/io.h>
 #include <util/delay.h>
 #include <string.h>
-#include "util.h"
+#include "libetherten/util.h"
 
 struct w5100_regs_base w5100_reginit = {
     .mode = 0x80,

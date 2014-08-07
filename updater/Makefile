@@ -10,3 +10,6 @@ all: $(PRG).elf lst text eeprom
 bootloader.o: ../bootloader/bootloader.bin	
 
 include ../avr.mk
+
+LDFLAGS += -L../libetherten
+CPPFLAGS += -I../include -I../libetherten/include

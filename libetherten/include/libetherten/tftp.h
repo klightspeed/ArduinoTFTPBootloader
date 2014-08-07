@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include <stdint.h>
+#include <avr/wdt.h>
 #include "w5100.h"
 
 struct tftp_packet {
@@ -45,7 +46,7 @@ static inline void tftp_send_rrq(struct tftp_state *state, char *filename, uint8
     copy_zx_str(buf, filename, 64);
     copy_const_zx_constz(buf, PSTR("octet\000blksize\000512\000"), 18);
 
-    w5100_send(socknum, &state->packet, buf - (uint8_t *)&state->packet);
+    w5100_send(socknum, &state->packet, buf - (uint8_t *)&state->packet, 0);
 }
 
 static inline void tftp_send_ack(struct tftp_state *state, uint16_t blknum, uint8_t socknum) {
@@ -57,7 +58,7 @@ static inline void tftp_send_ack(struct tftp_state *state, uint16_t blknum, uint
     write_x(buf, __blknum.byte[1]);
     write_x(buf, __blknum.byte[0]);
 
-    w5100_send(socknum, &state->packet, 4);
+    w5100_send(socknum, &state->packet, 4, 0);
 }
 
 static inline uint8_t tftp_try_get_response(struct tftp_state *state, uint16_t blknum, uint8_t socknum) {
@@ -75,7 +76,7 @@ static inline uint8_t tftp_try_get_response(struct tftp_state *state, uint16_t b
                 return 1;
             } else if (__blknum.word < blknum) {
                 state->packet.opcode[1] = 4;
-                w5100_send(socknum, &state->packet, 4);
+                w5100_send(socknum, &state->packet, 4, 0);
             }
         }
     }
@@ -118,7 +119,7 @@ static inline uint8_t tftp_read_block(struct tftp_state *state, uint16_t blknum,
             if (tftp_try_get_response(state, blknum + 1, socknum)) {
                 if (state->packetlen == 4) {
                     state->packet.opcode[1] = 4;
-                    w5100_send(socknum, &state->packet, 4);
+                    w5100_send(socknum, &state->packet, 4, 0);
                     w5100_sock_close(socknum);
                     return 0;
                 }

@@ -1,8 +1,8 @@
-#include "config.h"
+#include "libetherten/config.h"
 #include <stdint.h>
 #include <string.h>
-#include "dhcp.h"
-#include "util.h"
+#include "libetherten/dhcp.h"
+#include "libetherten/util.h"
 
 void __attribute__((naked)) __dhcp_init_request(void) {
     #define HEADERLEN (offsetof(struct dhcp_state,packet.elapsed))

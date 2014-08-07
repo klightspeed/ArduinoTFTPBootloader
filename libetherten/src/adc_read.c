@@ -1,6 +1,6 @@
-#include "config.h"
-#include "adc.h"
-#include "util.h"
+#include "libetherten/config.h"
+#include "libetherten/adc.h"
+#include "libetherten/util.h"
 #include <avr/io.h>
 #include <util/delay.h>
 

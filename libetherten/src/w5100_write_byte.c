@@ -1,6 +1,6 @@
-#include "config.h"
-#include "w5100.h"
-#include "util.h"
+#include "libetherten/config.h"
+#include "libetherten/w5100.h"
+#include "libetherten/util.h"
 
 void ___w5100_write_byte(uint16_t address, uint8_t value, uint8_t op) {
     union twobyte addr;

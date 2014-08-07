@@ -1,5 +1,5 @@
-#include "config.h"
-#include "w5100.h"
+#include "libetherten/config.h"
+#include "libetherten/w5100.h"
 #include <avr/io.h>
 
 void __attribute__((__naked__)) __w5100_sock_cmd(uint8_t socknum, uint8_t cmd) {

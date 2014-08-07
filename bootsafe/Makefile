@@ -6,3 +6,4 @@ all: $(PRG).elf lst text eeprom
 include ../avr.mk
 
 LDFLAGS += -ffreestanding -nostartfiles -nodefaultlibs -Wl,--section-start=.text=$(BOOTSAFE_START)
+CPPFLAGS += -I../include

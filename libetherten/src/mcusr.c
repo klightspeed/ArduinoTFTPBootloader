@@ -1,4 +1,4 @@
-#include "boot-funcs.h"
+#include "libetherten/mcusr.h"
 #include <stdint.h>
 
 uint8_t mcusr_mirror __attribute__((section(".noinit")));

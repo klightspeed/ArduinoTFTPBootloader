@@ -6,7 +6,7 @@ all: $(PRG).elf lst text eeprom
 
 include ../avr.mk
 
-LDFLAGS += -Wl,--section-start=.text=$(BOOTLOADER_START)
-CPPFLAGS += -DBOOTLOADER
+LDFLAGS += -Wl,--section-start=.text=$(BOOTLOADER_START) -L../libetherten
+CPPFLAGS += -DBOOTLOADER -I../include -I../libetherten/include
 
 
