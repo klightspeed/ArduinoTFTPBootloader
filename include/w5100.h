@@ -25,6 +25,7 @@
 #define W5100_OP_WRITE_FLASH_BIT 2
 #define W5100_OP_PEEK_BIT 4
 #define W5100_OP_CMD_BIT 5
+#define W5100_OP_CONTINUE_BIT 6
 
 #define W5100_OP_READ_RAM (W5100_OP_READ | _BV(W5100_OP_READ_RAM_BIT + 8))
 #define W5100_OP_PEEK_RAM (W5100_OP_READ_RAM | _BV(W5100_OP_PEEK_BIT + 8))
@@ -220,6 +221,8 @@ struct w5100_sock_reg {
 extern struct hwaddr bcasthwaddr;
 extern struct ipaddr gbcastipaddr;
 extern struct w5100_regs_base w5100_reginit;
+extern uint16_t txbufpos[4];
+extern uint16_t rxbufpos[4];
 
 void w5100_init(struct w5100_ifconfig *ifconfig);
 void ___w5100_write_byte(uint16_t address, uint8_t value, uint8_t op);
