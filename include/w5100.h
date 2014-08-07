@@ -23,11 +23,9 @@
 #define W5100_OP_READ_RAM_BIT 0
 #define W5100_OP_WRITE_RAM_BIT 1
 #define W5100_OP_WRITE_FLASH_BIT 2
-#define W5100_OP_PEEK_BIT 4
 #define W5100_OP_CMD_BIT 5
 
 #define W5100_OP_READ_RAM (W5100_OP_READ | _BV(W5100_OP_READ_RAM_BIT + 8))
-#define W5100_OP_PEEK_RAM (W5100_OP_READ_RAM | _BV(W5100_OP_PEEK_BIT + 8))
 #define W5100_OP_WRITE_RAM (W5100_OP_WRITE | _BV(W5100_OP_WRITE_RAM_BIT + 8))
 #define W5100_OP_WRITE_FLASH (W5100_OP_WRITE | _BV(W5100_OP_WRITE_FLASH_BIT + 8))
 #define W5100_OP_RECV_RAM (W5100_OP_READ_RAM | _BV(W5100_OP_CMD_BIT + 8))
@@ -224,7 +222,7 @@ extern struct w5100_regs_base w5100_reginit;
 void w5100_init(struct w5100_ifconfig *ifconfig);
 void ___w5100_write_byte(uint16_t address, uint8_t value, uint8_t op);
 void __w5100_rw_mem(uint16_t address, void *value, int len, uint16_t optype);
-void __w5100_sock_rw_mem(uint8_t socknum, void *buf, int len, uint16_t optype);
+void __w5100_sock_rw_mem(uint8_t socknum, void *buf, int len, uint16_t optype, int offset);
 void __w5100_sock_cmd(uint8_t socknum, uint8_t cmd);
 
 #define __w5100_write_byte(address,value,op) \
@@ -286,14 +284,13 @@ void __w5100_sock_cmd(uint8_t socknum, uint8_t cmd);
 #define w5100_write_mem(address,value,len) __w5100_rw_mem(address, value, len, W5100_OP_WRITE_RAM)
 #define w5100_write_mem_p(address,value,len) __w5100_rw_mem(address, value, len, W5100_OP_WRITE_FLASH)
 #define w5100_read_mem(address,value,len) __w5100_rw_mem(address, value, len, W5100_OP_READ_RAM)
-#define w5100_sock_write(socknum,value,len) __w5100_sock_rw_mem(socknum, value, len, W5100_OP_WRITE_RAM)
-#define w5100_sock_write_p(socknum,value,len) __w5100_sock_rw_mem(socknum, value, len, W5100_OP_WRITE_FLASH)
-#define w5100_sock_read(socknum,value,len) __w5100_sock_rw_mem(socknum, value, len, W5100_OP_READ_RAM)
-#define w5100_sock_peek(socknum,value,len) __w5100_sock_rw_mem(socknum, value, len, W5100_OP_PEEK_RAM)
+#define w5100_sock_write(socknum,value,len,offset) __w5100_sock_rw_mem(socknum, value, len, W5100_OP_WRITE_RAM, offset)
+#define w5100_sock_write_p(socknum,value,len,offset) __w5100_sock_rw_mem(socknum, value, len, W5100_OP_WRITE_FLASH, offset)
+#define w5100_sock_read(socknum,value,len,offset) __w5100_sock_rw_mem(socknum, value, len, W5100_OP_READ_RAM, offset)
 #define w5100_sock_rxavail(socknum) w5100_read_word(W5100_SOCK_REGADDR(socknum, rxrcvd))
 #define w5100_sock_txfree(socknum) w5100_read_word(W5100_SOCK_REGADDR(socknum, txfree))
-#define w5100_send(socknum,data,len) __w5100_sock_rw_mem(socknum, data, len, W5100_OP_SEND_RAM)
-#define w5100_send_p(socknum,data,len) __w5100_sock_rw_mem(socknum, data, len, W5100_OP_SEND_FLASH)
+#define w5100_send(socknum,data,len,offset) __w5100_sock_rw_mem(socknum, data, len, W5100_OP_SEND_RAM, offset)
+#define w5100_send_p(socknum,data,len,offset) __w5100_sock_rw_mem(socknum, data, len, W5100_OP_SEND_FLASH, offset)
 
 #define w5100_sock_cmd(socknum,cmd) \
     { \
@@ -323,28 +320,55 @@ void __w5100_sock_cmd(uint8_t socknum, uint8_t cmd);
 #define w5100_set_destport(socknum,port) w5100_write_word(W5100_SOCK_REGADDR(socknum, dstport), port)
 #define w5100_set_desthwaddr(socknum,hwaddr) w5100_write_mem(W5100_SOCK_REGADDR(socknum, dsthwaddr), hwaddr, 6)
 
+#define w5100_udp_read(socknum,buf,len,offset) w5100_sock_read(socknum, buf, len, (offset) + 8)
 
-static inline void w5100_udp_peek(uint8_t socknum, struct w5100_udp_packet *packet) {
-    w5100_sock_peek(socknum, packet, 8);
-    BYTESWAP(&packet->port);
-    BYTESWAP(&packet->len);
+static inline int w5100_udp_peek(uint8_t socknum, struct w5100_udp_packet *packet) {
+    if (w5100_sock_rxavail(socknum) != 0) {
+        w5100_sock_read(socknum, packet, 8, 0);
+        BYTESWAP(&packet->port);
+        BYTESWAP(&packet->len);
+        return 1;
+    }
+
+    return 0;
 }
 
 static inline int w5100_udp_try_recv(uint8_t socknum, struct w5100_udp_packet *packet) {
     if (w5100_sock_rxavail(socknum) != 0) {
-	__w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM);
+	__w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM, 0);
 	BYTESWAP(&packet->port);
 	BYTESWAP(&packet->len);
-	__w5100_sock_rw_mem(socknum, packet->data, packet->len, W5100_OP_RECV_RAM);
+	__w5100_sock_rw_mem(socknum, packet->data, packet->len, W5100_OP_RECV_RAM, 0);
 	return 1;
     }
 
     return 0;
 }
 
+static inline void w5100_udp_end_recv(uint8_t socknum, struct w5100_udp_packet *packet) {
+    if (w5100_sock_rxavail(socknum) != 0) {
+	__w5100_sock_rw_mem(socknum, packet, 8, W5100_OP_RECV_RAM, 0);
+	BYTESWAP(&packet->port);
+	BYTESWAP(&packet->len);
+	__w5100_sock_rw_mem(socknum, packet->data, 0, W5100_OP_RECV_RAM, packet->len);
+    }
+}
+
 static inline int w5100_udp_recv(uint8_t socknum, struct w5100_udp_packet *packet, int timeout) {
     while (timeout--) {
         if (w5100_udp_try_recv(socknum, packet)) return 1;
+	_delay_ms(1);
+    }
+
+    return 0;
+}
+
+static inline int w5100_udp_wait(uint8_t socknum, struct w5100_udp_packet *packet, int timeout) {
+    while (timeout--) {
+        if (w5100_sock_rxavail(socknum) != 0) {
+	    w5100_udp_peek(socknum, packet);
+	    return 1;
+	}
 	_delay_ms(1);
     }
 
@@ -373,7 +397,7 @@ static inline int w5100_tcp_try_recv(uint8_t socknum, uint8_t *buf, int maxread,
             rxavail = maxread;
         }
 
-        __w5100_sock_rw_mem(socknum, buf, rxavail, W5100_OP_RECV_RAM);
+        __w5100_sock_rw_mem(socknum, buf, rxavail, W5100_OP_RECV_RAM, 0);
         return rxavail;
     }
 

@@ -3,7 +3,7 @@
 #include <avr/io.h>
 #include "util.h"
 
-void __attribute__((__naked__)) __w5100_sock_rw_mem(uint8_t socknum, void *buf, int len, uint16_t optype) {
+void __attribute__((__naked__)) __w5100_sock_rw_mem(uint8_t socknum, void *buf, int len, uint16_t optype, int offset) {
     asm volatile (
 	"andi r21, hi8(%[mask])\n"
 	"push r20\n"
@@ -29,6 +29,8 @@ void __attribute__((__naked__)) __w5100_sock_rw_mem(uint8_t socknum, void *buf, 
 	"call ___w5100_write_byte\n"
 	"mov r24, r23\n"
 	"in r25, %[datareg]\n"
+	"add r24, r16\n"
+	"adc r25, r17\n"
 	"push r24\n"
 	"push r25\n"
 	"andi r25, hi8(%[mask])\n"
@@ -71,16 +73,13 @@ void __attribute__((__naked__)) __w5100_sock_rw_mem(uint8_t socknum, void *buf, 
 	"add r22, r20\n"
 	"adc r23, r21\n"
 	"ldi r20, %[opwrite]\n"
-	"sbrc r19, %[oppeek]\n"
-	"rjmp 1f\n"
+        "sbrs r19, %[opcmd]\n"
+	"rjmp 4f\n"
 	"adiw r24, 1\n"
 	"call ___w5100_write_byte\n"
 	"sbiw r24, 1\n"
 	"mov r22, r23\n"
 	"call ___w5100_write_byte\n"
-	"1:\n"
-        "sbrs r19, %[opcmd]\n"
-	"rjmp 4f\n"
 	"ldi r24, %[cmdreg]\n"
 	"ldi r22, %[cmdrecv]\n"
 	"sbrs r19, %[opreadram]\n"
@@ -109,7 +108,6 @@ void __attribute__((__naked__)) __w5100_sock_rw_mem(uint8_t socknum, void *buf, 
 	  [opreadram] "I" (W5100_OP_READ_RAM_BIT),
 	  [opwriteram] "I" (W5100_OP_WRITE_RAM_BIT),
 	  [opwriteflash] "I" (W5100_OP_WRITE_FLASH_BIT),
-	  [oppeek] "I" (W5100_OP_PEEK_BIT),
 	  [opcmd] "I" (W5100_OP_CMD_BIT),
 	  [cmdrecv] "i" (W5100_CR_RECV),
 	  [cmdsend] "i" (W5100_CR_SEND),
