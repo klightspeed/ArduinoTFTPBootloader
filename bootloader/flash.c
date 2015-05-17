@@ -32,6 +32,7 @@ void copy_tftp_flash(struct tftp_state *state, uint8_t socknum) {
     __reboot_application();
 }
 
+#ifndef CONFIG_NOTCP
 void copy_tcp_flash(uint8_t socknum) {
     uint16_t pos = 0;
     uint8_t data[SPM_PAGESIZE];
@@ -59,4 +60,4 @@ void copy_tcp_flash(uint8_t socknum) {
 
     __reboot_application();
 }
-
+#endif
