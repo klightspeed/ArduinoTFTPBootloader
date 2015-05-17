@@ -40,7 +40,7 @@ int main (void) {
 
     wdt_reset();
     wdt_enable(WDTO_1S);
-#if defined(CONFIG_DHCP_RANDON_XID) || defined(CONFIG_RANDOM_HWADDR)
+#if defined(CONFIG_DHCP_RANDOM_XID) || (defined(CONFIG_INIT_EEPROM_BOOTDATA) && defined(CONFIG_RANDOM_HWADDR))
     seed_pseudorandom();
 #endif
 
@@ -50,6 +50,10 @@ int main (void) {
     sdcard_init();
 
     load_eeprom_data();
+
+#ifdef CONFIG_INIT_EEPROM_BOOTDATA
+    init_eeprom_data();
+#endif
 
     if (eeprom_boot_data.usedhcp) {
         dhcp_get_address(&state.dhcp, &eeprom_boot_data.ifconfig, 2);
@@ -83,7 +87,6 @@ int main (void) {
     }
 
     __reboot_application();
-
-    return 0;
+    __builtin_unreachable();
 }
 
