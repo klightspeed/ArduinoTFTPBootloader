@@ -6,6 +6,8 @@
 #include <util/delay.h>
 #include "bootloader.h"
 #include "libetherten/flash.h"
+#include "libetherten/eeprom.h"
+#include "libetherten/random.h"
 
 void __bootloader_start(void);
 
@@ -22,6 +24,11 @@ static int memcmp_PP(const void *src, const void *dst, int len) {
 static uint8_t flashdata[SPM_PAGESIZE];
 
 int main (void) {
+    seed_pseudorandom();
+    load_eeprom_data();
+    init_eeprom_data();
+    save_eeprom_data();
+
     if (memcmp_PP(bootloader_data, (void *)__bootloader_start, bootloader_data_len)) {
         DDRB |= _BV(PB5);
 
