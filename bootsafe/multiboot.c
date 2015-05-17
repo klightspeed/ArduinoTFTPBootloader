@@ -4,6 +4,9 @@
 #include "boot-funcs.h"
 
 extern uint8_t __stack[];
+void __attribute__((noreturn)) __optiboot_start(void);
+void __attribute__((noreturn)) __bootloader_start(void);
+void __attribute__((noreturn)) __application_start(void);
 
 FUSES = {
     .low = (unsigned char)~0,
@@ -17,28 +20,31 @@ void __attribute__((used,naked)) __init(uint32_t magic) {
 
     uint8_t mcusr = MCUSR;
 
-    if (mcusr & _BV(EXTRF)) {
+    if (__mcusr_mirror == 0 || (mcusr & (_BV(EXTRF) | _BV(PORF) | _BV(BORF)))) {
         __mcusr_mirror = mcusr;
-        asm volatile ("jmp __optiboot_start");
-        __builtin_unreachable();
     }
 
-    MCUSR = 0;
     wdt_reset();
-    wdt_disable();
+    wdt_enable(WDTO_8S);
 
-    if (__mcusr_mirror == 0 || (mcusr & _BV(PORF))) {
-        __mcusr_mirror = mcusr;
-    }
+    if (!(mcusr & _BV(EXTRF))) {
+        MCUSR = 0;
 
-    asm volatile ("lds r2, __mcusr_mirror");
+        asm volatile ("lds r2, __mcusr_mirror");
 
-    if ((mcusr & _BV(PORF)) || magic == 0xc0decafe) {
-        asm volatile ("jmp __bootloader_start");
-        __builtin_unreachable();
+        if ((mcusr & (_BV(PORF) | _BV(BORF))) || magic == 0xc0decafe) {
+            __bootloader_start();
+            //asm volatile ("jmp __bootloader_start");
+            __builtin_unreachable();
+        } else {
+            __mcusr_mirror = 0;
+            __application_start();
+            //asm volatile ("jmp __application_start");
+            __builtin_unreachable();
+        }
     } else {
-        __mcusr_mirror = 0;
-        asm volatile ("jmp __application_start");
+        __optiboot_start();
+        //asm volatile ("jmp __optiboot_start");
         __builtin_unreachable();
     }
 }
