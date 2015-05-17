@@ -20,9 +20,9 @@ AR = avr-ar
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
 
-CFLAGS = -mmcu=$(MCU) -Os -fomit-frame-pointer -Wall --std=gnu99
-ASFLAGS = -mmcu=$(MCU)
-LDFLAGS = -mrelax -mmcu=$(MCU)
+CFLAGS += -mmcu=$(MCU) -Os -fomit-frame-pointer -Wall --std=gnu99
+ASFLAGS += -mmcu=$(MCU)
+LDFLAGS += -mrelax -mmcu=$(MCU)
 OBJCOPYTEXT = -j .text -j .data
 
 LDFLAGS += -Wl,--section-start=.application=$(APP_START) \
@@ -35,6 +35,7 @@ LDFLAGS += -Wl,--section-start=.application=$(APP_START) \
 
 ifeq ($(DEBUG), yes)
 CPPFLAGS += -DDEBUG
+CFLAGS += -g
 endif
 
 CLEAN_FILES = $(OBJS) *.o *.a *.elf *.eps *.png *.pdf *.bak *.lst *.map *.hex *.bin *.srec
