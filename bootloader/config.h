@@ -4,6 +4,6 @@
 #define DEFAULT_FW_FILENAME "EtherTen.bin"
 #define DEFAULT_FW_FILENAME2 "\\Boot\\EtherTen.bin"
 /* #define CONFIG_INIT_EEPROM_BOOTDATA */
-/* #define NO_TCP */
+/* #define CONFIG_NOTCP */
 
 #endif /* BOOTLOADER_CONFIG_H */
