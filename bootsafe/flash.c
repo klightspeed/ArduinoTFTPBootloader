@@ -23,8 +23,8 @@ void ___flash_write_page(void *pageaddr, void *src, uint16_t valid1, uint16_t va
 
                 do {
                     asm volatile (
-                        "ldd r0, Y+\n\t"
-                        "ldd r1, Y+\n\t"
+                        "ld r0, Y+\n\t"
+                        "ld r1, Y+\n\t"
                         "sts %[spmreg], %[pagefill]\n\t"
                         "spm\n\t"
                         "clr r1\n\t"
