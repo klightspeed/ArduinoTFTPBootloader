@@ -9,25 +9,30 @@
 void copy_tftp_flash(struct tftp_state *state, uint8_t socknum) {
     uint16_t blknum = 0;
 
-    memset (state, 0, sizeof(struct tftp_state));
-    while (tftp_read_block(state, blknum, 2)) {
-        uint16_t datalen = state->packetlen - 4;
-        uint8_t *data = state->packet.data;
-        uint16_t sectpage = blknum * 512;
+    do {
+        union twobyte __blknum;
+        __blknum.byte[1] = state->packet.blknum[0];
+        __blknum.byte[0] = state->packet.blknum[1];
 
-        if (sectpage < 28672) {
-            for (int pageaddr = 0; pageaddr < datalen; pageaddr += SPM_PAGESIZE) {
-                if (compare_const_zx(data + pageaddr, (void *)(sectpage + pageaddr), SPM_PAGESIZE)) {
-                    wdt_reset();
-                    flash_write_page((void *)(sectpage + pageaddr), data + pageaddr);
+        if (__blknum.word == blknum + 1) {
+            uint16_t datalen = state->packetlen - 4;
+            uint8_t *data = state->packet.data;
+            uint16_t sectpage = blknum * 512;
+
+            if (sectpage < 28672) {
+                for (int pageaddr = 0; pageaddr < datalen; pageaddr += SPM_PAGESIZE) {
+                    if (compare_const_zx(data + pageaddr, (void *)(sectpage + pageaddr), SPM_PAGESIZE)) {
+                        wdt_reset();
+                        flash_write_page((void *)(sectpage + pageaddr), data + pageaddr);
+                    }
                 }
+            } else {
+                break;
             }
-        } else {
-            break;
-        }
 
-        blknum++;
-    }
+            blknum++;
+        }
+    } while (tftp_read_block(state, blknum, 2));
 
     __reboot_application();
 }
