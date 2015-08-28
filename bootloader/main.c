@@ -29,6 +29,7 @@ static union {
 } state;
 
 int main (void) {
+    struct eeprom_boot_data eeprom_boot_data;
     char *try_filenames[] = {
         eeprom_boot_data.firmware_filename,
         DEFAULT_FW_FILENAME,
@@ -49,10 +50,10 @@ int main (void) {
 
     sdcard_init();
 
-    load_eeprom_data();
+    load_eeprom_data(&eeprom_boot_data);
 
 #ifdef CONFIG_INIT_EEPROM_BOOTDATA
-    init_eeprom_data();
+    init_eeprom_data(&eeprom_boot_data);
 #endif
 
     if (eeprom_boot_data.usedhcp) {

@@ -24,10 +24,11 @@ static int memcmp_PP(const void *src, const void *dst, int len) {
 static uint8_t flashdata[SPM_PAGESIZE];
 
 int main (void) {
+    struct eeprom_boot_data eedata;
     seed_pseudorandom();
-    load_eeprom_data();
-    init_eeprom_data();
-    save_eeprom_data();
+    load_eeprom_data(&eedata);
+    init_eeprom_data(&eedata);
+    save_eeprom_data(&eedata);
 
     if (memcmp_PP(bootloader_data, (void *)__bootloader_start, bootloader_data_len)) {
         DDRB |= _BV(PB5);
