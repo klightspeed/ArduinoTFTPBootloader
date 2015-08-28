@@ -25,6 +25,15 @@ static uint8_t flashdata[SPM_PAGESIZE];
 
 int main (void) {
     struct eeprom_boot_data eedata;
+    DDRB = 0;
+    DDRC = 0;
+    DDRD = 0;
+    PORTB = 0xFF;
+    PORTC = 0xFF;
+    PORTD = 0xFF;
+    
+    DDRB |= _BV(2) | _BV(4) | _BV(5);
+
     seed_pseudorandom();
     load_eeprom_data(&eedata);
     init_eeprom_data(&eedata);

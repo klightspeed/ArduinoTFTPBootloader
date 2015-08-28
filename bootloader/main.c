@@ -39,6 +39,15 @@ int main (void) {
     char **try_filename = try_filenames;
     char *firmware_filename = NULL;
 
+    DDRB = 0;
+    DDRC = 0;
+    DDRD = 0;
+    PORTB = 0xFF;
+    PORTC = 0xFF;
+    PORTD = 0xFF;
+    
+    DDRB |= _BV(2) | _BV(4) | _BV(5);
+
     wdt_reset();
     wdt_enable(WDTO_1S);
 #if defined(CONFIG_DHCP_RANDOM_XID) || (defined(CONFIG_INIT_EEPROM_BOOTDATA) && defined(CONFIG_RANDOM_HWADDR))
